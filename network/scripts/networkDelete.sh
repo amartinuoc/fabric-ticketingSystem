@@ -15,14 +15,12 @@ function networkDelete() {
   infoln "\n*** DELETING NETWORK ***\n"
 
   # Remove previous certificates and channel configurations:
-  println "Deleting certificates, channel configurations, genesis blocks, chaincode packages, logs ..."
+  println "Deleting certificates, chaincode packages, channels configurations, genesis blocks, logs ..."
   rm -rf organizations/peerOrganizations
   rm -rf organizations/ordererOrganizations
-  mkdir -p channel-artifacts
-  rm -rf channel-artifacts/*
   rm -f chaincodes/*.tar.gz
-  mkdir -p logs
-  rm -rf logs/*
+  rm -rf channel-artifacts
+  rm -rf logs
 
   successln "Files deleted successful!"
 

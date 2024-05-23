@@ -41,6 +41,9 @@ fi
 
 function prepareEnv() {
 
+  # create directory for logs
+  mkdir -p logs
+
   export PATH=${UOCTFM_NETWORK_HOME}/../bin:${UOCTFM_NETWORK_HOME}:$PATH
   export FABRIC_CFG_PATH=${UOCTFM_NETWORK_HOME}/../config
 

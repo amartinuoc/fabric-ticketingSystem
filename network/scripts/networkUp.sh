@@ -37,7 +37,7 @@ function createOrgsAndOrdererArtifacts() {
   # Check if cryptogen tool exists
   checkTool cryptogen
 
- # Create certificates and artifacts
+  # Create certificates and artifacts
   createArtifactsOneOrg Client
   createArtifactsOneOrg Dev
   createArtifactsOneOrg QA

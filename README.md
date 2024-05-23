@@ -1,7 +1,7 @@
 
 # Despliegue de Red Hyperledger Fabric para Sistema de Ticketing
 
-Este repositorio alberga un proyecto destinado a implementar un caso de uso de una red privada de Hyperledger Fabric (HLF) basada en la [versión 2.5.7](https://github.com/hyperledger/fabric/releases/tag/v2.5.7). Se puede encontrar la documentación oficial de Hyperledger Fabric [aquí](https://hyperledger-fabric.readthedocs.io/en/release-2.5/).
+Este repositorio alberga un proyecto que implementa un caso de uso de una red privada de Hyperledger Fabric (HLF) basada en la [versión 2.5.7](https://github.com/hyperledger/fabric/releases/tag/v2.5.7). Se puede encontrar la documentación oficial de Hyperledger Fabric [aquí](https://hyperledger-fabric.readthedocs.io/en/release-2.5/).
 
 ## Visión General de la Red HLF
 
@@ -97,16 +97,7 @@ Ejemplos:
 ./interactWithCC.sh channeldev developer
 ```
 
-La organizacion '<org>' que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
-
-### Finalizar o desactivar la Red HLF
-
-Ejecutar el script 'networkStop.sh' para detener los contenedores y servicios en ejecución. Esta acción no borra datos ni configuraciones de la red HLF.
-
-```bash
-./networkStop.sh
-```
-NOTA: Se puede levantar la red de nuevo mediante el script 'networkUp.sh' sin necesidad de crear y configurar desde cero todo el proceso.
+La organizacion ir '&lt;org&gt;' que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
 
 ### Monitorizar la Red HLF
 
@@ -117,3 +108,21 @@ Lanzar el script 'monitordocker.sh' para iniciar un contenedor Docker llamado "l
 ```
 
 También maneja la finalización segura del contenedor cuando se interrumpe el script.
+
+### Pausar la Red HLF
+
+Ejecutar el script 'networkStop.sh' para detener los contenedores y servicios en ejecución. Esta acción no borra datos ni configuraciones de la red HLF.
+
+```bash
+./networkStop.sh
+```
+NOTA: Se puede levantar la red de nuevo mediante el script 'networkUp.sh' sin necesidad de crear y configurar desde cero todo el proceso.
+
+### Finalizar y borrar la Red HLF
+
+Ejecutar el script 'networkDelete.sh' para detener los contenedores/servicios en ejecución y definitivamente también borrarlos, así como las redes y volumenes docker asociados.
+
+```bash
+./networkDelete.sh
+```
+NOTA: Esta acción si borra datos y configuraciones de la red HLF.
