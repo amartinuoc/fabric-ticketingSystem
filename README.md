@@ -1,27 +1,27 @@
 
 # Despliegue de Red Hyperledger Fabric para Sistema de Ticketing
 
-Este repositorio contiene un proyecto para desplegar una red Hyperledger Fabric (HLF) basada en la [versión 2.5.7](https://github.com/hyperledger/fabric/releases/tag/v2.5.7). Puedes encontrar la documentación oficial de Hyperledger Fabric [aquí](https://hyperledger-fabric.readthedocs.io/en/release-2.5/).
+Este repositorio alberga un proyecto destinado a implementar un caso de uso de una red privada de Hyperledger Fabric (HLF) basada en la [versión 2.5.7](https://github.com/hyperledger/fabric/releases/tag/v2.5.7). Se puede encontrar la documentación oficial de Hyperledger Fabric [aquí](https://hyperledger-fabric.readthedocs.io/en/release-2.5/).
 
-## Visión General de la Red
+## Visión General de la Red HLF
 
-### Participantes de la red
+### Participantes
 
 La red HLF está compuesta por:
 
-*Nodo Orderer
-*Tres organizaciones:
-    -Organización Cliente con un nodo peer (peer0.orgclient)
-    -Organización Developer con un nodo peer (peer0.orgdev)
-    -Organización QA con un nodo peer (peer0.orgqa)
+* Un Nodo Orderer
+* Tres peers de organizaciones:
+    - Organización Cliente con un nodo peer (peer0.orgclient)
+    - Organización Developer con un nodo peer (peer0.orgdev)
+    - Organización QA con un nodo peer (peer0.orgqa)
 
 ### Caso de Uso
 
 La red HLF simula un sistema de gestión de tickets para proyectos de software:
 
-*Organización Cliente abre tickets para resolver incidencias o implementar funcionalidades.
-*Organización Developer asume y resuelve estos tickets.
-*Organización QA realiza pruebas y asegura la calidad de los tickets resueltos.
+* Organización Cliente abre tickets para resolver incidencias o implementar funcionalidades.
+* Organización Developer asume y resuelve estos tickets.
+* Organización QA realiza pruebas y asegura la calidad de los tickets resueltos.
 
 ### Canales
 
@@ -37,7 +37,7 @@ Una vez levantada la red e instalado y desplegado el Chaincode, se generan trans
 
 ## Prerrequisitos
 
-Existen una serie de scripts disponibles en network/scripts
+Existen una serie de scripts en bash disponibles en la ruta 'network/scripts/'
 
 Se puede ejecutar el script 'installPrerequisites.sh' para instalar los paquetes necesarios:
 
@@ -46,12 +46,12 @@ Se puede ejecutar el script 'installPrerequisites.sh' para instalar los paquetes
 ```
 La lista de paquetes que se instala es la siguiente:
 
-curl
-docker.io
-docker-compose
-golang
-jq
-openjdk-11-jdk
+* curl
+* docker.io
+* docker-compose
+* golang
+* jq
+* openjdk-11-jdk
 
 ```bash
 sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk -y
@@ -70,7 +70,7 @@ Usar el script 'networkAll.sh' para crear y desplegar la red HLF. Este script re
 * Crear los canales y unir los peers a ellos: 'networkCreateChannels.sh'
 * Compilar el código fuente del Chaincode, empaquetarlo, instalarlo en todos los peers y comprometerlo en los canales: 'networkDeployCC.sh'
 
-Por el momento, solo el Chaincode 'ticketingSystemContract' está disponible, pero otros Chaincodes se pueden desplegar usando:
+Por el momento, solo el Chaincode 'ticketingSystemContract' está disponible, pero otros Chaincodes futuros se pueden desplegar usando:
 
 ```bash
 ./networkDeployCC.sh <nombre_chaincode> <version>
@@ -97,18 +97,18 @@ Ejemplos:
 ./interactWithCC.sh channeldev developer
 ```
 
-La organizacion que se especifica en el comando es la identidad con la que se realizaran las consultas y llamadas a las funciones definidas en el Chaincode
+La organizacion <org> que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
 
-### Parar la Red
+### Finalizar o desactivar la Red HLF
 
 Ejecutar el script 'networkStop.sh' para detener los contenedores y servicios en ejecución. Esta acción no borra datos ni configuraciones de la red HLF.
 
 ```bash
 ./networkStop.sh
 ```
-NOTA: Se puede levantar la red de nuevo sin necesidad de crear y configurar desde cero mediante el script 'networkUp.sh'
+NOTA: Se puede levantar la red de nuevo mediante el script 'networkUp.sh' sin necesidad de crear y configurar desde cero todo el proceso.
 
-### Monitorizar la Red
+### Monitorizar la Red HLF
 
 Lanzar el script 'monitordocker.sh' para iniciar un contenedor Docker llamado "logspout" que monitorea los logs de todos los contenedores de la red desplegada.
 
@@ -116,4 +116,4 @@ Lanzar el script 'monitordocker.sh' para iniciar un contenedor Docker llamado "l
 ./monitordocker.sh
 ```
 
-También maneja la terminación segura del contenedor cuando se interrumpe el script.
+También maneja la finalización segura del contenedor cuando se interrumpe el script.
