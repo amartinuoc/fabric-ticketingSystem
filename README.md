@@ -27,8 +27,8 @@ La red HLF simula un sistema de gestión de tickets para proyectos de software:
 
 Se crean dos canales con la siguiente distribución organizacional:
 
-*channeldev: Organización Cliente y Organización Developer
-*channelqa: Organización Cliente y Organización QA
+* channeldev: Organización Cliente y Organización Developer
+* channelqa: Organización Cliente y Organización QA
 
 ### Chaincode
 
@@ -61,7 +61,7 @@ El script también realiza configuraciones adicionales relacionadas con el servi
 
 ## Scripts
 
-### Crear y Desplegar la Red
+### Crear y Desplegar la Red HLF
 
 Usar el script 'networkAll.sh' para crear y desplegar la red HLF. Este script realiza los siguientes pasos:
 
@@ -97,7 +97,7 @@ Ejemplos:
 ./interactWithCC.sh channeldev developer
 ```
 
-La organizacion <org> que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
+La organizacion '<org>' que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
 
 ### Finalizar o desactivar la Red HLF
 
