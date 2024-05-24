@@ -33,7 +33,7 @@ Se crean dos canales con la siguiente distribución organizacional:
 ### Chaincode
 
 Un Chaincode llamado 'ticketingSystemContract' se instala en los tres peers. 
-Una vez levantada la red e instalado y desplegado el Chaincode, se generan transacciones que simulan la lógica del sistema de gestión de tickets.
+Una vez levantada la red y con el Chaincode instalado y desplegado en los canales, se generan transacciones que simulan la lógica del sistema de gestión de tickets.
 
 ## Prerrequisitos
 
@@ -97,7 +97,7 @@ Ejemplos:
 ./interactWithCC.sh channeldev developer
 ```
 
-La organizacion ir '&lt;org&gt;' que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
+La organizacion &lt;org&gt; que se especifica en el comando es la identidad del peer desde la que se realizaran las consultas y/o llamadas a las funciones definidas en el Chaincode.
 
 ### Monitorizar la Red HLF
 
