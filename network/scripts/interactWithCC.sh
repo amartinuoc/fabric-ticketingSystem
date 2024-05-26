@@ -13,7 +13,7 @@ source scripts/envVar.sh
 # Check if the script received at least one parameter
 if [ $# -lt 1 ]; then
   warnln "The script must receive at least one parameter:"
-  ecwarnlnho "1- CHANNEL_NAME"
+  warnln "1- CHANNEL_NAME"
   exit 1
 fi
 
@@ -89,7 +89,7 @@ function prepareEnv() {
 function makeInvokeCC() {
 
   local CC_INVOKE_CTOR=$1
-  local CC_INVOKE_CTOR_FORMATTED=$(formatCtorJson "$CC_INVOKE_CTOR" invoke)
+  local CC_INVOKE_CTOR_FORMATTED=$(formatCtorJson "$CC_INVOKE_CTOR" "$ORG_IDENTITY" invoke)
 
   # Print and log the formatted chaincode constructor
   println "$CC_INVOKE_CTOR_FORMATTED" | tee -a "$CC_LOG_FILE"
@@ -141,6 +141,17 @@ function invokeUpdateTicketToInProgress() {
   makeInvokeCC "$ctor"
 }
 
+function invokeAddCommentForTicketInProgress() {
+  local ticketId=$1
+  if [[ -z "$ticketId" ]]; then
+    errorln "Error in invokeAddCommentForTicketInProgress: 'ticketId' parameter is required and cannot be empty."
+    return 1
+  fi
+  local comment="Continuing the development of the chaincode. Asset class design has been completed. Alvaro"
+  local ctor='{"Args":["addCommentForTicketInProgress","'$ticketId'","'$comment'"]}'
+  makeInvokeCC "$ctor"
+}
+
 function invokeUpdateTicketToResolved() {
   local ticketId=$1
   if [[ -z "$ticketId" ]]; then
@@ -182,7 +193,7 @@ function invokeDeleteTicket() {
 function makeQueryCC() {
 
   local CC_QUERY_CTOR=$1
-  local CC_QUERY_CTOR_FORMATTED=$(formatCtorJson "$CC_QUERY_CTOR" query)
+  local CC_QUERY_CTOR_FORMATTED=$(formatCtorJson "$CC_QUERY_CTOR" "$ORG_IDENTITY" query)
 
   # Print and log the formatted chaincode constructor
   println "$CC_QUERY_CTOR_FORMATTED" | tee -a "$CC_LOG_FILE"
@@ -240,6 +251,16 @@ function queryGetAllTicketsByStatus() {
   makeQueryCC "$ctor"
 }
 
+function queryGetAllTicketsByAssigned() {
+  local assigned=$1
+  if [[ -z "$assigned" ]]; then
+    errorln "Error in GetAllTicketsByAssigned: 'assigned' parameter is required and cannot be empty."
+    return 1
+  fi
+  local ctor='{"Args":["GetAllTicketsByAssigned","'${assigned}'"]}'
+  makeQueryCC "$ctor"
+}
+
 function queryGetTicketHistory() {
   local ticketId=$1
   if [[ -z "$ticketId" ]]; then
@@ -250,22 +271,25 @@ function queryGetTicketHistory() {
   makeQueryCC "$ctor"
 }
 
-function test_Init_Retrieve() {
+function test_InitLedger_GetAllTickets() {
   invokeInitLedger
   sleep 2
   queryGetAllTickets
 }
 
-function test_Open_Update_History_Delete() {
+function test_Open_Update_History_Delete_NewTicket() {
   invokeOpenNewTicket
   sleep 2
   invokeUpdateTicketToInProgress "$TICKET_ID"
+  sleep 5
+  invokeAddCommentForTicketInProgress "$TICKET_ID"
   sleep 5
   invokeUpdateTicketToResolved "$TICKET_ID"
   sleep 5
   invokeUpdateTicketToClosed "$TICKET_ID"
   sleep 5
   queryGetAllTicketsByStatus "CLOSED"
+  queryGetAllTicketsByAssigned "Alvaro"
   queryReadTicket "$TICKET_ID"
   queryGetTicketHistory "$TICKET_ID"
   invokeDeleteTicket "$TICKET_ID"
@@ -286,10 +310,10 @@ function interact() {
   prepareEnv
 
   # init ledger with 6 tickets and retrieve them
-  test_Init_Retrieve
+  test_InitLedger_GetAllTickets
 
   # open a new ticket and transition them through various states and finally delete it
-  #test_Open_Update_History_Delete
+  #test_Open_Update_History_Delete_NewTicket
 
 }
 

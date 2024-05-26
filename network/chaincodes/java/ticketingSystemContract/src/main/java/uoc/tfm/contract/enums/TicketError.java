@@ -17,8 +17,14 @@ public enum TicketError {
     // Error code when a ticket has invalid status
     TICKET_INVALID_STATUS("ERR-004", "Ticket invalid status"),
 
+    // Error code for an empty comment when adding to a ticket
+    TICKET_COMMENT_EMPTY("ERR-005", "Comment cannot be empty when adding to a ticket"),
+
+    // Error code for an empty assigned user parameter
+    TICKET_ASSIGNED_EMPTY("ERR-006", "Assigned user parameter cannot be empty"),
+
     // Error code while retrieving history for ticket
-    TICKET_HISTORY_RETRIEVAL_ERROR("ERR-005", "Error retrieving history for ticket");
+    TICKET_HISTORY_RETRIEVAL_ERROR("ERR-007", "Error retrieving history for ticket");
 
     private final String code; // Ticket Error code
     private final String description; // Ticket Description of the error

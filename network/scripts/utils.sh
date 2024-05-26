@@ -156,7 +156,8 @@ function verifyResult() {
 function formatCtorJson() {
 
   local ctorJson="$1"
-  local type="$2"
+  local org_identity="$2"
+  local type="$3"
   local current_datetime=$(date +"%Y-%m-%d %H:%M:%S.%3N")
   echo "\n- Timestamp: $current_datetime"
 
@@ -169,7 +170,7 @@ function formatCtorJson() {
     # Extraer el resto de los elementos como un array
     local parameters=$(echo "$ctor" | jq -r '.Args[1:] | @tsv')
 
-    echo "- Function: $function [chaincode $type]"
+    echo "- Function: $function [chaincode $type by org '$org_identity']"
 
     # Dividir los parámetros en un array
     IFS=$'\t' read -r -a params_array <<<"$parameters"

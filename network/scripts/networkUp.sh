@@ -10,6 +10,17 @@ cd $UOCTFM_NETWORK_HOME
 source scripts/utils.sh
 source scripts/envVar.sh
 
+function existOrgsAndOrdererArtifacts() {
+  local dirOrderer="organizations/ordererOrganizations"
+  local dirOrgs="organizations/peerOrganizations"
+  if [[ -d "$dirOrderer" && "$(ls -A "$dirOrderer")" ]]; then
+    if [[ -d "$dirOrgs" && "$(ls -A "$dirOrgs")" ]]; then
+      return 0 # true
+    fi
+  fi
+  return 1 # false
+}
+
 function createArtifactsOneOrg() {
 
   ORG=$1
@@ -66,10 +77,11 @@ function networkUp() {
   infoln "\n*** STARTING NETWORK ***"
 
   # generate orgs and orderer artifacts if they don't exist
-  if [ ! -d "organizations/peerOrganizations" ] || [ ! -d "organizations/ordererOrganizations" ]; then
-    # If at least one of the directories does not exist,
+  if ! existOrgsAndOrdererArtifacts; then
     # call the function to create the artifacts
     createOrgsAndOrdererArtifacts
+  else
+    infoln "\nOrgs and Orderer Artifacts already exist. They are not created again."
   fi
 
   createAndStartContainers

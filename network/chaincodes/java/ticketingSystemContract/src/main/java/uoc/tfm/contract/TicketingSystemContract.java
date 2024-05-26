@@ -200,7 +200,7 @@ public final class TicketingSystemContract implements ContractInterface {
             String errorMessage = String.format(
                     "Ticket %s must be in OPEN to be updated to IN_PROGRESS",
                     ticketId);
-            System.out.println("[UpdateTicketToInProgress] NOK");
+            System.out.println("[UpdateTicketToInProgress] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_INVALID_STATUS.getCodeAndName());
         }
 
@@ -219,6 +219,60 @@ public final class TicketingSystemContract implements ContractInterface {
         Ticket updatedTicket = updateTicket(ctx, ticket);
 
         System.out.println("[UpdateTicketToInProgress] OK: " + updatedTicket);
+        return updatedTicket;
+    }
+
+    /**
+     * Adds a comment to a ticket that is in progress.
+     * The ticket must be in the IN_PROGRESS state for the comment to be added.
+     * The method will update the last modified date of the ticket if the comment is
+     * not empty.
+     *
+     * @param ctx      the transaction context
+     * @param ticketId the ID of the ticket being updated
+     * @param comment  the comment to be added to the ticket
+     * @return the updated ticket
+     */
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public Ticket addCommentForTicketInProgress(
+            final Context ctx,
+            final String ticketId,
+            final String comment) {
+
+        System.out.println("[addCommentForTicketInProgress] Trying with ticketId=" + ticketId);
+
+        // Check if the comment is empty
+        if (comment == null || comment.trim().isEmpty()) {
+            String errorMessage = String.format(
+                    "New comment cannot be empty for ticket %s",
+                    ticketId);
+            System.out.println("[addCommentForTicketInProgress] NOK: " + errorMessage);
+            throw new ChaincodeException(errorMessage, TicketError.TICKET_COMMENT_EMPTY.getCodeAndName());
+        }
+
+        // Retrieve the ticket from the ledger
+        Ticket ticket = ReadTicket(ctx, ticketId);
+
+        // Check if the ticket status is IN_PROGRESS
+        if (ticket.getTicketStatus() != TicketStatus.IN_PROGRESS) {
+            String errorMessage = String.format(
+                    "Ticket %s must be in IN_PROGRESS to add a comment",
+                    ticketId);
+            System.out.println("[addCommentForTicketInProgress] NOK: " + errorMessage);
+            throw new ChaincodeException(errorMessage, TicketError.TICKET_INVALID_STATUS.getCodeAndName());
+        }
+
+        // Get the current date and time
+        final LocalDateTime currentDateTime = getCurrentLocalDateTime(ctx);
+
+        // Update the ticket details
+        ticket.getComments().add(comment);
+        ticket.setLastModifiedDate(currentDateTime);
+
+        // Update the ticket in the ledger and return the updated ticket
+        Ticket updatedTicket = updateTicket(ctx, ticket);
+
+        System.out.println("[addCommentForTicketInProgress] OK: " + updatedTicket);
         return updatedTicket;
     }
 
@@ -251,7 +305,7 @@ public final class TicketingSystemContract implements ContractInterface {
             String errorMessage = String.format(
                     "Ticket %s must be in IN_PROGRESS to be updated to RESOLVED",
                     ticketId);
-            System.out.println("[UpdateTicketToResolved] NOK");
+            System.out.println("[UpdateTicketToResolved] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_INVALID_STATUS.getCodeAndName());
         }
 
@@ -296,7 +350,7 @@ public final class TicketingSystemContract implements ContractInterface {
             String errorMessage = String.format(
                     "Ticket %s must be in RESOLVED to be updated to CLOSED",
                     ticketId);
-            System.out.println("[UpdateTicketToClosed] NOK");
+            System.out.println("[UpdateTicketToClosed] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_INVALID_STATUS.getCodeAndName());
         }
 
@@ -333,8 +387,10 @@ public final class TicketingSystemContract implements ContractInterface {
 
         // Check if the ticket exists
         if (!ticketExists(ctx, ticketId)) {
-            String errorMessage = String.format("Ticket %s does not exist", ticketId);
-            System.out.println(errorMessage);
+            String errorMessage = String.format(
+                    "Ticket %s does not exist",
+                    ticketId);
+            System.out.println("[DeleteTicket] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_NOT_FOUND.getCodeAndName());
         }
 
@@ -375,8 +431,10 @@ public final class TicketingSystemContract implements ContractInterface {
 
         // Check if the ticket exists
         if (jsonTicket == null || jsonTicket.isEmpty()) {
-            String errorMessage = String.format("Ticket %s does not exist", ticketId);
-            System.out.println(errorMessage);
+            String errorMessage = String.format(
+                    "Ticket %s does not exist",
+                    ticketId);
+            System.out.println("[ReadTicket] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_NOT_FOUND.getCodeAndName());
         }
 
@@ -388,7 +446,7 @@ public final class TicketingSystemContract implements ContractInterface {
             return ticket;
 
         } catch (JsonProcessingException e) {
-            System.out.println("[ReadTicket] NOK");
+            System.out.println("[ReadTicket] NOK: Error processing JSON");
             // Handle JSON processing errors
             return handleJsonProcessingError(e, Ticket.class);
         }
@@ -493,6 +551,7 @@ public final class TicketingSystemContract implements ContractInterface {
             TicketStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
             String errorMessage = TicketError.TICKET_INVALID_STATUS.getDescription() + ": " + status;
+            System.out.println("[GetAllTicketsByStatus] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_INVALID_STATUS.getCodeAndName());
         }
 
@@ -527,6 +586,55 @@ public final class TicketingSystemContract implements ContractInterface {
     }
 
     /**
+     * Retrieves all tickets from the ledger by the assigned user.
+     *
+     * @param ctx      the transaction context
+     * @param assigned the assigned user to filter tickets by
+     * @return array of tickets found on the ledger assigned to the specified user
+     */
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public String GetAllTicketsByAssigned(final Context ctx, String assigned) {
+
+        System.out.println("[GetAllTicketsByAssigned] Trying with assigned=" + assigned);
+
+        // Validate the assigned input
+        if (assigned == null || assigned.trim().isEmpty()) {
+            String errorMessage = TicketError.TICKET_ASSIGNED_EMPTY.getDescription();
+            System.out.println("[GetAllTicketsByAssigned] NOK: " + errorMessage);
+            throw new ChaincodeException(errorMessage, TicketError.TICKET_ASSIGNED_EMPTY.getCodeAndName());
+        }
+
+        ChaincodeStub stub = ctx.getStub();
+        List<Ticket> queryResults = new ArrayList<>();
+        QueryResultsIterator<KeyValue> results = stub.getStateByRange("", "");
+
+        try {
+            // Iterate through the query results
+            for (KeyValue result : results) {
+                // Deserialize each ticket from JSON format
+                Ticket ticket = mapper.readValue(result.getStringValue(), Ticket.class);
+                // Check if the assigned user in ticket matches the specified assigned user
+                if (ticket.getAssigned().contains(assigned)) {
+                    System.out.println("[GetAllTicketsByAssigned] Retrieved ticket: " + ticket);
+                    queryResults.add(ticket);
+                }
+            }
+
+            // Serialize the list of tickets to JSON format
+            final String jsonResponse = mapper.writeValueAsString(queryResults);
+
+            System.out.println("[GetAllTicketsByAssigned] OK: Retrieved " + queryResults.size() +
+                    " tickets assigned to " + assigned);
+            return jsonResponse;
+
+        } catch (JsonProcessingException e) {
+            // Handle any JSON processing errors
+            System.out.println("[GetAllTicketsByAssigned] NOK: Error processing JSON");
+            return handleJsonProcessingError(e, String.class);
+        }
+    }
+
+    /**
      * Retrieves the transaction history for a specific ticket from the ledger.
      *
      * @param ctx      the transaction context
@@ -536,7 +644,7 @@ public final class TicketingSystemContract implements ContractInterface {
     @Transaction(intent = Transaction.TYPE.EVALUATE)
     public String GetTicketHistory(Context ctx, String ticketId) {
 
-        System.out.printf("[GetTicketHistory] Trying with ticketId=" + ticketId);
+        System.out.println("[GetTicketHistory] Trying with ticketId=" + ticketId);
 
         // Retrieve the transaction history for the specified ticket ID
         QueryResultsIterator<KeyModification> resultsIterator = ctx.getStub().getHistoryForKey(ticketId);
@@ -551,7 +659,7 @@ public final class TicketingSystemContract implements ContractInterface {
                 record.append(", Timestamp: ").append(km.getTimestamp());
                 record.append(", IsDeleted: ").append(km.isDeleted());
                 record.append(", Value: ").append(new String(km.getValue()));
-                
+
                 // Add the transaction record to the history list
                 history.add(record.toString());
             }
@@ -560,7 +668,7 @@ public final class TicketingSystemContract implements ContractInterface {
             String errorMessage = String.format("%s %s: %s",
                     TicketError.TICKET_HISTORY_RETRIEVAL_ERROR.getDescription(),
                     ticketId, e.getMessage());
-            System.out.println("[GetTicketHistory] Error: " + errorMessage);
+            System.out.println("[GetTicketHistory] NOK: " + errorMessage);
             throw new ChaincodeException(errorMessage, TicketError.TICKET_HISTORY_RETRIEVAL_ERROR.getCodeAndName());
         } finally {
             try {
