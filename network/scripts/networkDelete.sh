@@ -14,15 +14,15 @@ function networkDelete() {
 
   infoln "\n*** DELETING NETWORK ***\n"
 
-  # Remove previous certificates and channel configurations:
+  # Remove previous certificates, chaincodes and channels configurations:
   println "Deleting certificates, chaincode packages, channels configurations, genesis blocks, logs ..."
-  rm -rf organizations/peerOrganizations
-  rm -rf organizations/ordererOrganizations
+  rm -rf organizations/peerOrganizations/*
+  rm -rf organizations/ordererOrganizations/*
   rm -f chaincodes/*.tar.gz
-  rm -rf channel-artifacts
+  rm -rf channel-artifacts/*
   rm -rf logs
 
-  successln "Files deleted successful!"
+  successln "Files deleted successfully!"
 
   # Check for docker prerequisites
   checkPrereqsDocker

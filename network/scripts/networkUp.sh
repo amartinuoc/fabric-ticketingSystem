@@ -10,15 +10,16 @@ cd $UOCTFM_NETWORK_HOME
 source scripts/utils.sh
 source scripts/envVar.sh
 
+dirOrderer="organizations/ordererOrganizations"
+dirOrgs="organizations/peerOrganizations"
+
 function existOrgsAndOrdererArtifacts() {
-  local dirOrderer="organizations/ordererOrganizations"
-  local dirOrgs="organizations/peerOrganizations"
   if [[ -d "$dirOrderer" && "$(ls -A "$dirOrderer")" ]]; then
     if [[ -d "$dirOrgs" && "$(ls -A "$dirOrgs")" ]]; then
-      return 0 # true
+      return 0
     fi
   fi
-  return 1 # false
+  return 1
 }
 
 function createArtifactsOneOrg() {
@@ -47,6 +48,9 @@ function createOrgsAndOrdererArtifacts() {
 
   # Check if cryptogen tool exists
   checkTool cryptogen
+
+  # create directory for peers and orderer artifacts if not exist
+  mkdir -p "$dirOrderer" "$dirOrgs"
 
   # Create certificates and artifacts
   createArtifactsOneOrg Client

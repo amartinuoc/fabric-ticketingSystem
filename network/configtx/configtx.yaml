@@ -13,12 +13,12 @@
 #
 ################################################################################
 Organizations:
-  - &OrdererOrg
+  - &OrgOrderer
     # SampleOrg defines an MSP using the sampleconfig.  It should never be used
     # in production but may be used as a template for other definitions
     # DefaultOrg defines the organization which is used in the sampleconfig
     # of the fabric.git development environment
-    Name: OrdererOrg
+    Name: OrdererMSP
     # ID to load the MSP definition as
     ID: OrdererMSP
     # MSPDir is the filesystem path which contains the MSP configuration
@@ -348,7 +348,7 @@ Profiles:
       <<: *OrdererDefaults
       OrdererType: etcdraft
       Organizations:
-        - *OrdererOrg
+        - *OrgOrderer
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults
@@ -363,7 +363,7 @@ Profiles:
       <<: *OrdererDefaults
       OrdererType: etcdraft
       Organizations:
-        - *OrdererOrg
+        - *OrgOrderer
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults
@@ -377,7 +377,7 @@ Profiles:
     Orderer:
       <<: *OrdererDefaults
       Organizations:
-        - *OrdererOrg
+        - *OrgOrderer
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults
@@ -391,7 +391,7 @@ Profiles:
     Orderer:
       <<: *OrdererDefaults
       Organizations:
-        - *OrdererOrg
+        - *OrgOrderer
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults

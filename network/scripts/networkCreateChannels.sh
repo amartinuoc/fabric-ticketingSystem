@@ -115,7 +115,7 @@ function createChannels() {
 
   export PATH=${UOCTFM_NETWORK_HOME}/../bin:${UOCTFM_NETWORK_HOME}:$PATH
 
-  # create directory for channel artifacts
+  # create directory for channel artifacts if not exists
   mkdir -p channel-artifacts
 
   # create channels with Orderer and org peers
