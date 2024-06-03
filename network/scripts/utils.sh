@@ -37,6 +37,39 @@ function fatalln() {
   exit 1
 }
 
+# Set environment variables for the peer org specified
+setOrgIdentity() {
+  local USING_ORG=""
+  if [ -z "$OVERRIDE_ORG" ]; then
+    USING_ORG="$1"
+  else
+    USING_ORG="${OVERRIDE_ORG}"
+  fi
+  println "Using '${USING_ORG}' organization identity"
+  if [ "$USING_ORG" == "developer" ]; then
+    export CORE_PEER_LOCALMSPID="OrgDeveloperMSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGDEV_CA
+    export CORE_PEER_MSPCONFIGPATH=${NETWORK_HOME}/organizations/peerOrganizations/orgdev.uoctfm.com/users/Admin@orgdev.uoctfm.com/msp
+    export CORE_PEER_ADDRESS=$PEER0_ORGDEV_ADDRESS
+  elif [ "$USING_ORG" == "client" ]; then
+    export CORE_PEER_LOCALMSPID="OrgClientMSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGCLIENT_CA
+    export CORE_PEER_MSPCONFIGPATH=${NETWORK_HOME}/organizations/peerOrganizations/orgclient.uoctfm.com/users/Admin@orgclient.uoctfm.com/msp
+    export CORE_PEER_ADDRESS=$PEER0_ORGCLIENT_ADDRESS
+  elif [ "$USING_ORG" == "qa" ]; then
+    export CORE_PEER_LOCALMSPID="OrgQaMSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGQA_CA
+    export CORE_PEER_MSPCONFIGPATH=${NETWORK_HOME}/organizations/peerOrganizations/orgqa.uoctfm.com/users/Admin@orgqa.uoctfm.com/msp
+    export CORE_PEER_ADDRESS=$PEER0_ORGQA_ADDRESS
+  else
+    errorln "ORG Unknown to use identity"
+  fi
+
+  if [ "$VERBOSE" = "true" ]; then
+    env | grep CORE
+  fi
+}
+
 function checkPrereqsDocker() {
   docker-compose --version >/dev/null 2>&1
 
@@ -115,6 +148,40 @@ function checkOrgsAndOrdererArtifacts() {
     errorln
     exit 1
   fi
+}
+
+checkExplorerToolFiles() {
+  local explorer_dir="explorer"
+  local compose_file="$explorer_dir/compose-explorer.yaml"
+  local config_file="$explorer_dir/config.json"
+  local connection_dir="$explorer_dir/connection-profile"
+  local info_error="Follow the instructions in the Fabric repo to install Explorer:
+  https://github.com/hyperledger-labs/blockchain-explorer"
+
+  if [[ ! -d "$explorer_dir" ]]; then
+    errorln "The directory '$explorer_dir' does not exist."
+    errorln "$info_error"
+    exit 1
+  fi
+
+  if [[ ! -f "$compose_file" ]]; then
+    errorln "The file '$compose_file' does not exist."
+    errorln "$info_error"
+    exit 1
+  fi
+
+  if [[ ! -f "$config_file" ]]; then
+    errorln "The file '$config_file' does not exist."
+    errorln "$info_error"
+    exit 1
+  fi
+
+  if [[ ! -d "$connection_dir" ]]; then
+    errorln "The directory '$connection_dir' does not exist."
+    errorln "$info_error"
+    exit 1
+  fi
+
 }
 
 function checkChaincodeSource() {
@@ -223,18 +290,103 @@ function prettyOutputJson() {
 
 }
 
+# Helper function that sets the peer connection parameters for a chaincode operation
+parsePeerConnectionParameters() {
+
+  PEER_CONN_PARMS=()
+  PEERS=""
+
+  # Loop through all input arguments
+  while [ "$#" -gt 0 ]; do
+    setOrgIdentity "$1"
+
+    PEER="'peer0.Org${1^}'"
+    ## Set peer addresses
+    if [ -z "$PEERS" ]; then
+      PEERS="$PEER"
+    else
+      PEERS="$PEERS,$PEER"
+    fi
+
+    # Add peer address
+    PEER_CONN_PARMS+=("--peerAddresses" "$CORE_PEER_ADDRESS")
+
+    # Add TLS certificate path
+    PEER_CONN_PARMS+=(--tlsRootCertFiles "$CORE_PEER_TLS_ROOTCERT_FILE")
+
+    # Shift by one to get to the next organization identifier
+    shift
+  done
+
+}
+
+# Helper function that sets the endorsement policy parameters for a chaincode operation
+parseChaincodeEndPolicyParameter() {
+
+  CC_END_POLICY_PARM=$CC_END_POLICY
+  local count=1
+
+  # Loop through all input arguments
+  while [ "$#" -gt 0 ]; do
+    local orgIni="Org$count"
+    local orgFin="Org${1^}MSP"
+
+    # Add the formatted organization to the end policy parameters
+    CC_END_POLICY_PARM="$(echo "$CC_END_POLICY_PARM" | sed "s/$orgIni/$orgFin/g")"
+
+    # Increment the counter
+    ((count++))
+
+    # Shift by one to get to the next organization identifier
+    shift
+  done
+
+  # Add --signature-policy if END_POLICY_PARM is not empty
+  if [ -n "$CC_END_POLICY_PARM" ]; then
+    warnln "Signature policy is '$CC_END_POLICY_PARM', which is no default"
+    CC_END_POLICY_PARM="--signature-policy ${CC_END_POLICY_PARM}"
+  fi
+
+}
+
+# Function to generate a title log for script
+generateTitleLogScript() {
+
+  local special_chars="****************"
+
+  local environment="[environment: $WORK_ENVIRONMENT"
+
+  # If the environment is "cloud", include the organization node
+  if [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
+    local org="node: $ORG_NODE"
+  fi
+
+  # Concatenate the text of the environment and the organization node (if available)
+  local result="$environment"
+  if [[ ! -z "$org" ]]; then
+    result+=" , $org"
+  fi
+
+  # Add closing brackets
+  result+="]"
+
+  echo "$special_chars $1 $result $special_chars"
+}
+
 export -f println
 export -f errorln
 export -f successln
 export -f infoln
 export -f warnln
 export -f fatalln
+export -f setOrgIdentity
 export -f checkPrereqsDocker
 export -f checkPrereqsJava11
 export -f checkFabricBinaries
 export -f checkFabricConf
 export -f checkFabricConfTx
 export -f checkOrgsAndOrdererArtifacts
+export -f checkExplorerToolFiles
 export -f checkChaincodeSource
 export -f checkChaincodeIsCompiled
 export -f checkTool
@@ -242,3 +394,6 @@ export -f verifyResult
 export -f formatCtorJson
 export -f extractTicketId
 export -f prettyOutputJson
+export -f parsePeerConnectionParameters
+export -f parseChaincodeEndPolicyParameter
+export -f generateTitleLogScript

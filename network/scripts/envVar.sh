@@ -1,125 +1,235 @@
 #!/bin/bash
 
-UOCTFM_NETWORK_HOME=${UOCTFM_NETWORK_HOME:-${PWD}}
-. ${UOCTFM_NETWORK_HOME}/scripts/utils.sh
+NETWORK_HOME=${NETWORK_HOME:-${PWD}}
+source ${NETWORK_HOME}/scripts/utils.sh
 
-# Flag to enable or disable debugging commands
-export DEBUG_COMMANDS=false
-# Path to Chaincode calls log file
-export CC_LOG_FILE=${UOCTFM_NETWORK_HOME}/logs/logCC.txt
-# Path to docker-compose file
-COMPOSE_FILE_PATH=docker/compose-net-all.yaml
+# Verificar si el fichero config.properties existe
+PROPERTIES_FILE="${NETWORK_HOME}/config.properties"
+if [[ ! -f "$PROPERTIES_FILE" ]]; then
+  fatalln "Properties file '$PROPERTIES_FILE' not found!"
+  fatalln "Exiting"
+  exit 1
+fi
 
-# Chaincode endorsement policy using signature policy syntax.
-export CC_END_POLICY="" #  The default policy requires an endorsement from Org1 and Org2
-#export CC_END_POLICY="OR('Org1.member','Org2.member')" # requires an endorsement from Org1 or Org2"
+# Leer y exportar las variables del fichero config.properties
+while IFS='=' read -r key value; do
+  if [[ $key =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    eval "$key=\"$value\""
+  fi
+done <"$PROPERTIES_FILE"
 
-# Set environment variables for generated certificates and network access by orderer
-export ORDERER_CA=${UOCTFM_NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/msp/tlscacerts/tlsca.uoctfm.com-cert.pem
-export ORDERER_ADMIN_TLS_SIGN_CERT=${UOCTFM_NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/tls/server.crt
-export ORDERER_ADMIN_TLS_PRIVATE_KEY=${UOCTFM_NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/tls/server.key
-export ORDERER_ADDRESS=localhost:7050
-export ORDERER_ADDRESS_ADMIN=localhost:7053
+# Function to check if WORK_ENVIRONMENT is valid
+check_work_environment() {
+  export WORK_ENVIRONMENT=$(echo "$WORK_ENVIRONMENT" | tr '[:upper:]' '[:lower:]')
+  case "$WORK_ENVIRONMENT" in
+  local | cloud)
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid WORK_ENVIRONMENT:$WORK_ENVIRONMENT. Allowed values: local, cloud."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if ORG_NODE is valid
+check_org_node() {
+  export ORG_NODE=$(echo "$ORG_NODE" | tr '[:upper:]' '[:lower:]')
+  case "$ORG_NODE" in
+  orderer | developer | client | qa)
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid ORG_NODE:$ORG_NODE. Allowed values: orderer, developer, client, qa."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if ANCHOR_PEERS is valid
+check_anchor_peers() {
+  export ANCHOR_PEERS=$(echo "$ANCHOR_PEERS" | tr '[:upper:]' '[:lower:]')
+  case "$ANCHOR_PEERS" in
+  true | false)
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid ANCHOR_PEERS:$ANCHOR_PEERS. Allowed values: true, false."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if ID_CC_END_POLICY is valid and assign appropriate value to CC_END_POLICY
+check_cc_end_policy() {
+  case "$ID_CC_END_POLICY" in
+  1)
+    export CC_END_POLICY="OR('Org1.member','Org2.member')"
+    return 0
+    ;;
+  2)
+    export CC_END_POLICY=""
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid ID_CC_END_POLICY:$ID_CC_END_POLICY. Allowed values: 1,2."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if ORDERING_SERVICE_TYPE is valid
+check_ordering_service_type() {
+  export ORDERING_SERVICE_TYPE=$(echo "$ORDERING_SERVICE_TYPE" | tr '[:upper:]' '[:lower:]')
+  # Check the value of ORDERING_SERVICE_TYPE
+  case "$ORDERING_SERVICE_TYPE" in
+  # Allowed values: solo, kafka, raft
+  solo | kafka | raft)
+    return 0
+    ;;
+  *)
+    # Print error message if the value is not valid
+    errorln "Properties file - Invalid ORDERING_SERVICE_TYPE:$ORDERING_SERVICE_TYPE. Allowed values: solo, kafka, raft"
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if EXPLORER_TOOL is valid
+check_explorer_tools() {
+  export EXPLORER_TOOL=$(echo "$EXPLORER_TOOL" | tr '[:upper:]' '[:lower:]')
+  case "$EXPLORER_TOOL" in
+  true | false)
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid EXPLORER_TOOL:$EXPLORER_TOOL. Allowed values: true, false."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if DEBUG_COMMANDS is valid
+check_debug_commands() {
+  export DEBUG_COMMANDS=$(echo "$DEBUG_COMMANDS" | tr '[:upper:]' '[:lower:]')
+  case "$DEBUG_COMMANDS" in
+  true | false)
+    return 0
+    ;;
+  *)
+    errorln "Properties file - Invalid DEBUG_COMMANDS:$DEBUG_COMMANDS. Allowed values: true, false."
+    return 1
+    ;;
+  esac
+}
+
+# Function to check if node names are defined
+check_names_nodes() {
+  if [ -z "$ORDERER" ]; then
+    errorln "Properties file - Missing ORDERER."
+    return 1
+  fi
+
+  if [ -z "$PEER0_ORGDEV" ]; then
+    errorln "Properties file - Missing PEER0_ORGDEV."
+    return 1
+  fi
+
+  if [ -z "$PEER0_ORGCLIENT" ]; then
+    errorln "Properties file - Missing PEER0_ORGCLIENT."
+    return 1
+  fi
+
+  if [ -z "$PEER0_ORGQA" ]; then
+    errorln "Properties file - Missing PEER0_ORGQA."
+    return 1
+  fi
+  export ORDERER
+  export PEER0_ORGDEV
+  export PEER0_ORGCLIENT
+  export PEER0_ORGQA
+}
+
+check_work_environment || exit 1
+check_org_node || exit 1
+check_anchor_peers || exit 1
+check_cc_end_policy || exit 1
+check_ordering_service_type || exit 1
+check_explorer_tools || exit 1
+check_debug_commands || exit 1
+check_names_nodes || exit 1
+
+# Calculate path to docker-compose file
+if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
+
+  export COMPOSE_FILE_PATH="docker/compose-net-all.yaml"
+
+elif [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
+
+  case "$ORG_NODE" in
+  orderer)
+    export COMPOSE_FILE_PATH="docker/compose-net-orderer.yaml"
+    ;;
+  developer)
+    export COMPOSE_FILE_PATH="docker/compose-net-developer.yaml"
+    ;;
+  client)
+    export COMPOSE_FILE_PATH="docker/compose-net-client.yaml"
+    ;;
+  qa)
+    export COMPOSE_FILE_PATH="docker/compose-net-qa.yaml"
+    ;;
+  *)
+    errorln "Invalid ORG_NODE value:$ORG_NODE"
+    exit 1
+    ;;
+  esac
+
+else
+
+  errorln "Invalid WORK_ENVIRONMENT:$WORK_ENVIRONMENT"
+  errorln "Allowed values: local, cloud. Exiting."
+  exit 1
+
+fi
+
+export EXPLORER_COMPOSE_FILE_PATH="explorer/compose-explorer.yaml"
+
+# Set specific node names according the work environment
+if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
+  # Set localhost for local environment
+  ORDERER_NAME="localhost"
+  PEER0_ORGDEV_NAME="localhost"
+  PEER0_ORGCLIENT_NAME="localhost"
+  PEER0_ORGQA_NAME="localhost"
+elif [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
+  # Set the specific names for cloud environment
+  ORDERER_NAME=$ORDERER
+  PEER0_ORGDEV_NAME=$PEER0_ORGDEV
+  PEER0_ORGCLIENT_NAME=$PEER0_ORGCLIENT
+  PEER0_ORGQA_NAME=$PEER0_ORGQA
+else
+  errorln "Invalid WORK_ENVIRONMENT:$WORK_ENVIRONMENT"
+  errorln "Allowed values: local, cloud. Exiting."
+  return 1
+fi
+
+# Set environment variables for generated certificates and network access
+# for orderer
+export ORDERER_CA=${NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/msp/tlscacerts/tlsca.uoctfm.com-cert.pem
+export ORDERER_ADMIN_TLS_SIGN_CERT=${NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/tls/server.crt
+export ORDERER_ADMIN_TLS_PRIVATE_KEY=${NETWORK_HOME}/organizations/ordererOrganizations/uoctfm.com/orderers/orderer.uoctfm.com/tls/server.key
+export ORDERER_ADDRESS=${ORDERER_NAME}:7050
+export ORDERER_ADDRESS_ADMIN=${ORDERER_NAME}:7053
 export CORE_PEER_TLS_ENABLED=true
 
-# Set environment variables for generated certificates and network access by each peer org
-export PEER0_ORGDEV_CA=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgdev.uoctfm.com/peers/peer0.orgdev.uoctfm.com/tls/ca.crt
-export PEER0_ORGDEV_ADDRESS=localhost:9051
+# Set environment variables for generated certificates and network access
+# for each peer org
+export PEER0_ORGDEV_CA=${NETWORK_HOME}/organizations/peerOrganizations/orgdev.uoctfm.com/peers/peer0.orgdev.uoctfm.com/tls/ca.crt
+export PEER0_ORGDEV_ADDRESS=${PEER0_ORGDEV_NAME}:9051
 
-export PEER0_ORGCLIENT_CA=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgclient.uoctfm.com/peers/peer0.orgclient.uoctfm.com/tls/ca.crt
-export PEER0_ORGCLIENT_ADDRESS=localhost:7051
+export PEER0_ORGCLIENT_CA=${NETWORK_HOME}/organizations/peerOrganizations/orgclient.uoctfm.com/peers/peer0.orgclient.uoctfm.com/tls/ca.crt
+export PEER0_ORGCLIENT_ADDRESS=${PEER0_ORGCLIENT_NAME}:7051
 
-export PEER0_ORGQA_CA=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgqa.uoctfm.com/peers/peer0.orgqa.uoctfm.com/tls/ca.crt
-export PEER0_ORGQA_ADDRESS=localhost:11051
-
-# Set environment variables for the peer org specified
-setOrgIdentity() {
-  local USING_ORG=""
-  if [ -z "$OVERRIDE_ORG" ]; then
-    USING_ORG="$1"
-  else
-    USING_ORG="${OVERRIDE_ORG}"
-  fi
-  println "Using '${USING_ORG}' organization identity "
-  if [ "$USING_ORG" == "developer" ]; then
-    export CORE_PEER_LOCALMSPID="OrgDeveloperMSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGDEV_CA
-    export CORE_PEER_MSPCONFIGPATH=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgdev.uoctfm.com/users/Admin@orgdev.uoctfm.com/msp
-    export CORE_PEER_ADDRESS=$PEER0_ORGDEV_ADDRESS
-  elif [ "$USING_ORG" == "client" ]; then
-    export CORE_PEER_LOCALMSPID="OrgClientMSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGCLIENT_CA
-    export CORE_PEER_MSPCONFIGPATH=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgclient.uoctfm.com/users/Admin@orgclient.uoctfm.com/msp
-    export CORE_PEER_ADDRESS=$PEER0_ORGCLIENT_ADDRESS
-  elif [ "$USING_ORG" == "qa" ]; then
-    export CORE_PEER_LOCALMSPID="OrgQaMSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORGQA_CA
-    export CORE_PEER_MSPCONFIGPATH=${UOCTFM_NETWORK_HOME}/organizations/peerOrganizations/orgqa.uoctfm.com/users/Admin@orgqa.uoctfm.com/msp
-    export CORE_PEER_ADDRESS=$PEER0_ORGQA_ADDRESS
-  else
-    errorln "ORG Unknown to use identity"
-  fi
-
-  if [ "$VERBOSE" = "true" ]; then
-    env | grep CORE
-  fi
-}
-
-# Helper function that sets the peer connection parameters for a chaincode operation
-parsePeerConnectionParameters() {
-
-  PEER_CONN_PARMS=()
-  PEERS=""
-
-  # Loop through all input arguments
-  while [ "$#" -gt 0 ]; do
-    setOrgIdentity "$1"
-
-    PEER="'peer0.Org${1^}'"
-    ## Set peer addresses
-    if [ -z "$PEERS" ]; then
-      PEERS="$PEER"
-    else
-      PEERS="$PEERS,$PEER"
-    fi
-
-    # Add peer address
-    PEER_CONN_PARMS+=("--peerAddresses" "$CORE_PEER_ADDRESS")
-
-    # Add TLS certificate path
-    PEER_CONN_PARMS+=(--tlsRootCertFiles "$CORE_PEER_TLS_ROOTCERT_FILE")
-
-    # Shift by one to get to the next organization identifier
-    shift
-  done
-
-}
-
-# Helper function that sets the endorsement policy parameters for a chaincode operation
-parseChaincodeEndPolicyParameter() {
-
-  CC_END_POLICY_PARM=$CC_END_POLICY
-  local count=1
-
-  # Loop through all input arguments
-  while [ "$#" -gt 0 ]; do
-    local orgIni="Org$count"
-    local orgFin="Org${1^}MSP"
-
-    # Add the formatted organization to the end policy parameters
-    CC_END_POLICY_PARM="$(echo "$CC_END_POLICY_PARM" | sed "s/$orgIni/$orgFin/g")"
-
-    # Increment the counter
-    ((count++))
-
-    # Shift by one to get to the next organization identifier
-    shift
-  done
-
-  # Add --signature-policy if END_POLICY_PARM is not empty
-  if [ -n "$CC_END_POLICY_PARM" ]; then
-    warnln "Signature policy is '$CC_END_POLICY_PARM', which is no default"
-    CC_END_POLICY_PARM="--signature-policy ${CC_END_POLICY_PARM}"
-  fi
-
-}
+export PEER0_ORGQA_CA=${NETWORK_HOME}/organizations/peerOrganizations/orgqa.uoctfm.com/peers/peer0.orgqa.uoctfm.com/tls/ca.crt
+export PEER0_ORGQA_ADDRESS=${PEER0_ORGQA_NAME}:11051
