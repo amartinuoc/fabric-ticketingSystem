@@ -1,5 +1,7 @@
 #!/bin/bash
 
+script_name=$(basename "$0" | sed 's/\.[^.]*$//')
+
 REPO_URL="https://github.com/amartinuoc/fabric-ticketingSystem"
 TARGET_DIR="$HOME/fabric-ticketingSystem"
 NETWORK_HOME="$TARGET_DIR/network"
@@ -9,7 +11,7 @@ FSTAB_ENTRY="$BUCKET_NAME "$MOUNT_POINT" gcsfuse rw,allow_other,implicit_dirs,di
 
 # Log function
 log() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - "$script_name" - $1"
 }
 
 install_packets() {

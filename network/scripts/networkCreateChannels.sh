@@ -280,10 +280,6 @@ function startExplorerTool() {
     # Check for docker prerequisites
     checkPrereqsDocker
 
-    export EXPLORER_CONFIG_FILE_PATH=${NETWORK_HOME}/explorer/config.json
-    export EXPLORER_PROFILE_DIR_PATH=${NETWORK_HOME}/explorer/connection-profile
-    export FABRIC_CRYPTO_PATH=${NETWORK_HOME}/organizations
-
     # Start docker services
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH up -d
     successln "Docker elements for Explorer tool started successfully!"
