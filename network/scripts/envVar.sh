@@ -159,28 +159,34 @@ check_explorer_tools || exit 1
 check_debug_commands || exit 1
 check_names_nodes || exit 1
 
-# Calculate path to docker-compose file
+# Chose path to docker-compose file according the work environment and node organization
 if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
 
+  # Set the compose file path for local environment
   export COMPOSE_FILE_PATH="docker/compose-net-all.yaml"
 
 elif [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
 
   case "$ORG_NODE" in
   orderer)
+    # Set the compose file path for orderer node
     export COMPOSE_FILE_PATH="docker/compose-net-orderer.yaml"
     ;;
   developer)
+    # Set the compose file path for developer node
     export COMPOSE_FILE_PATH="docker/compose-net-developer.yaml"
     ;;
   client)
+    # Set the compose file path for client node
     export COMPOSE_FILE_PATH="docker/compose-net-client.yaml"
     ;;
   qa)
+    # Set the compose file path for QA node
     export COMPOSE_FILE_PATH="docker/compose-net-qa.yaml"
     ;;
   *)
     errorln "Invalid ORG_NODE value:$ORG_NODE"
+    errorln "Allowed values: orderer, developer, client, qa. Exiting."
     exit 1
     ;;
   esac
@@ -193,7 +199,11 @@ else
 
 fi
 
+# Set additional environment variables for the Explorer tool configuration
 export EXPLORER_COMPOSE_FILE_PATH="explorer/compose-explorer.yaml"
+export EXPLORER_CONFIG_FILE_PATH=${NETWORK_HOME}/explorer/config.json
+export EXPLORER_PROFILE_DIR_PATH=${NETWORK_HOME}/explorer/connection-profile
+export FABRIC_CRYPTO_PATH=${NETWORK_HOME}/organizations
 
 # Set specific node names according the work environment
 if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
