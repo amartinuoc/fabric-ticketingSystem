@@ -6,3 +6,4 @@ network/channel-artifacts/
 network/logs/
 network/organizations/ordererOrganizations/
 network/organizations/peerOrganizations/
+network/cloud_storage

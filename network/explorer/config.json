@@ -1,0 +1,9 @@
+{
+	"network-configs": {
+		"explorer-network": {
+			"name": "Uoc Tfm Network",
+			"profile": "./connection-profile/profile-uoctfm.json"
+		}
+	},
+	"license": "Apache-2.0"
+}

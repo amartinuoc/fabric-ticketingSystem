@@ -3,8 +3,8 @@
 # Get the directory of the script
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 # Get the parent directory of the script directory, which will be the network home
-export UOCTFM_NETWORK_HOME=$(dirname "$SCRIPT_DIR")
-cd $UOCTFM_NETWORK_HOME
+export NETWORK_HOME=$(dirname "$SCRIPT_DIR")
+cd $NETWORK_HOME
 
 # Import utils
 source scripts/utils.sh
@@ -49,7 +49,7 @@ function compileSourceCC() {
   ./gradlew clean installDist --quiet
   res=$?
   { set +x; } 2>/dev/null
-  cd $UOCTFM_NETWORK_HOME
+  cd $NETWORK_HOME
 
   verifyResult $res "Chaincode Java code compilation has failed!"
   successln "Chaincode Java code compilation finish!"
@@ -87,7 +87,7 @@ function installCCOnOnePeer() {
 
   # Export network configuration variables and certificates required to contact the peer identity of the chosen ORG
   ORG=$1
-  infoln "\nInstalling chaincode '$CC_LABEL' on peer 0 from org '$ORG'"
+  infoln "\nInstalling chaincode '$CC_LABEL' on peer0 from org '$ORG'"
   setOrgIdentity $ORG
 
   # Install the compressed file (chaincode) on the peer of the chosen ORG
@@ -95,13 +95,13 @@ function installCCOnOnePeer() {
   peer lifecycle chaincode install $CC_PACKAGE
   res=$?
   { set +x; } 2>/dev/null
-  verifyResult $res "Chaincode installation on peer 0 from org '$ORG' failed!"
+  verifyResult $res "Chaincode installation on peer0 from org '$ORG' failed!"
 
   # Query the ID resulting from a combination of the chaincode name and the hash of the code content
   QUERYINSTALLED_JSON=$(peer lifecycle chaincode queryinstalled)
   println "${QUERYINSTALLED_JSON}"
 
-  successln "Chaincode is installed on peer 0 from org '$ORG' !"
+  successln "Chaincode is installed on peer0 from org '$ORG' !"
 
 }
 
@@ -120,7 +120,7 @@ function aprobeAndCommitCCOneChannel() {
   setOrgIdentity $ORG1
 
   # Approve the chaincode definition proposal installed on the peer of the first org.
-  println "Approving chaincode on peer 0 from org '$ORG1' ..."
+  println "Approving chaincode on peer0 from org '$ORG1' ..."
   [ "$DEBUG_COMMANDS" = true ] && set -x
   peer lifecycle chaincode approveformyorg -o $ORDERER_ADDRESS --ordererTLSHostnameOverride orderer.uoctfm.com --channelID $CHANNEL_NAME $CC_END_POLICY_PARM --name $CC_NAME --version $CC_VERSION --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "$ORDERER_CA" --waitForEvent
   res=$?
@@ -131,7 +131,7 @@ function aprobeAndCommitCCOneChannel() {
   setOrgIdentity $ORG2
 
   # Approve the chaincode definition proposal installed on the peer of the second org.
-  println "Approving chaincode on peer 0 from org '$ORG2' ..."
+  println "Approving chaincode on peer0 from org '$ORG2' ..."
   [ "$DEBUG_COMMANDS" = true ] && set -x
   peer lifecycle chaincode approveformyorg -o $ORDERER_ADDRESS --ordererTLSHostnameOverride orderer.uoctfm.com --channelID $CHANNEL_NAME $CC_END_POLICY_PARM --name $CC_NAME --version $CC_VERSION --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile "$ORDERER_CA" --waitForEvent
   res=$?
@@ -148,7 +148,7 @@ function aprobeAndCommitCCOneChannel() {
   peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name $CC_NAME --version $CC_VERSION --sequence 1
   res=$?
   { set +x; } 2>/dev/null
-  verifyResult $res "Check commit readiness is INVALID on peer 0 from org '$ORG2' !"
+  verifyResult $res "Check commit readiness is INVALID on peer0 from org '$ORG2' !"
 
   parsePeerConnectionParameters $ORG1 $ORG2
 
@@ -160,7 +160,7 @@ function aprobeAndCommitCCOneChannel() {
   peer lifecycle chaincode commit -o $ORDERER_ADDRESS --ordererTLSHostnameOverride orderer.uoctfm.com --channelID $CHANNEL_NAME $CC_END_POLICY_PARM --name $CC_NAME --version $CC_VERSION --sequence 1 --tls --cafile "$ORDERER_CA" "${PEER_CONN_PARMS[@]}"
   res=$?
   { set +x; } 2>/dev/null
-  verifyResult $res "Chaincode definition commit is FAILED on peer 0 from org '$ORG1' !"
+  verifyResult $res "Chaincode definition commit is FAILED on peer0 from org '$ORG1' !"
 
   # Query to check if the chaincode is registered on the channel
   infoln "Result of chaincode '$CC_LABEL' commit on channel '$CHANNEL_NAME': "
@@ -173,15 +173,15 @@ function aprobeAndCommitCCOneChannel() {
 
 function deployChaincode() {
 
-  infoln "\n*** DEPLOY CHAINCODE ON CHANNELS ***"
+  infoln "\n$(generateTitleLogScript "DEPLOY CHAINCODE ON CHANNELS")"
 
   # Check for artifacts, fabric binaries and conf files
   checkOrgsAndOrdererArtifacts
   checkFabricBinaries
   checkFabricConf
 
-  export PATH=${UOCTFM_NETWORK_HOME}/../bin:${UOCTFM_NETWORK_HOME}:$PATH
-  export FABRIC_CFG_PATH=${UOCTFM_NETWORK_HOME}/../config
+  export PATH=${NETWORK_HOME}/../bin:${NETWORK_HOME}:$PATH
+  export FABRIC_CFG_PATH=${NETWORK_HOME}/../config
 
   # Check if peer tool exists
   checkTool peer

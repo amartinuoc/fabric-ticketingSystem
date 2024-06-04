@@ -3,8 +3,8 @@
 # Get the directory of the script
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 # Get the parent directory of the script directory, which will be the network home
-export UOCTFM_NETWORK_HOME=$(dirname "$SCRIPT_DIR")
-cd $UOCTFM_NETWORK_HOME
+export NETWORK_HOME=$(dirname "$SCRIPT_DIR")
+cd $NETWORK_HOME
 
 # Import utils
 source scripts/utils.sh
@@ -12,12 +12,12 @@ source scripts/envVar.sh
 
 function networkStop() {
 
-  infoln "\n*** STOPPING NETWORK ***\n"
+  infoln "\n$(generateTitleLogScript "STOPPING NETWORK")"
 
   # Check for docker prerequisites
   checkPrereqsDocker
 
-  println "Stopping docker containers ..."
+  println "\nStopping docker elements: containers, volumes, and networks"
 
   # Check if the container 'logspout' exists
   CONTAINER_LOGSPOUT=logspout
@@ -29,10 +29,13 @@ function networkStop() {
     sleep 1
   fi
 
-  # Stop and down docker services
+  # Stop docker services
+  if [ "$EXPLORER_TOOL" = "true" ]; then
+    docker-compose -f $EXPLORER_COMPOSE_FILE_PATH stop
+  fi
   docker-compose -f $COMPOSE_FILE_PATH stop
 
-  successln "Docker containers stopped successfully!"
+  successln "Docker elements stopped successfully!"
 
 }
 

@@ -3,8 +3,8 @@
 # Get the directory of the script
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 # Get the parent directory of the script directory, which will be the network home
-export UOCTFM_NETWORK_HOME=$(dirname "$SCRIPT_DIR")
-cd $UOCTFM_NETWORK_HOME
+export NETWORK_HOME=$(dirname "$SCRIPT_DIR")
+cd $NETWORK_HOME
 
 # Import utils
 source scripts/utils.sh
@@ -44,8 +44,8 @@ function prepareEnv() {
   # create directory for logs
   mkdir -p logs
 
-  export PATH=${UOCTFM_NETWORK_HOME}/../bin:${UOCTFM_NETWORK_HOME}:$PATH
-  export FABRIC_CFG_PATH=${UOCTFM_NETWORK_HOME}/../config
+  export PATH=${NETWORK_HOME}/../bin:${NETWORK_HOME}:$PATH
+  export FABRIC_CFG_PATH=${NETWORK_HOME}/../config
 
   ORG1=""
   ORG2=""
@@ -299,7 +299,7 @@ function test_Open_Update_History_Delete_NewTicket() {
 
 function interact() {
 
-  infoln "\n*** INTERACT WITH NETWORK ***\n"
+  infoln "\n**************** INTERACT WITH NETWORK ****************\n"
 
   # Check for artifacts, fabric binaries and conf files
   checkOrgsAndOrdererArtifacts
