@@ -159,7 +159,7 @@ check_explorer_tools || exit 1
 check_debug_commands || exit 1
 check_names_nodes || exit 1
 
-# Chose path to docker-compose file according the work environment and node organization
+# Path to docker-compose file according the work environment and node organization
 if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
 
   # Set the compose file path for local environment
@@ -199,7 +199,7 @@ else
 
 fi
 
-# Set additional environment variables for the Explorer tool configuration
+# Set environment variables for the Explorer tool configuration
 export EXPLORER_COMPOSE_FILE_PATH="explorer/compose-explorer.yaml"
 export EXPLORER_CONFIG_FILE_PATH=${NETWORK_HOME}/explorer/config.json
 export EXPLORER_PROFILE_DIR_PATH=${NETWORK_HOME}/explorer/connection-profile
