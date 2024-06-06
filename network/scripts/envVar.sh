@@ -150,6 +150,15 @@ check_names_nodes() {
   export PEER0_ORGQA
 }
 
+# Function to check if bucket name is defined
+check_gcp_bucket_name() {
+  if [ -z "$GCP_BUCKET_NAME" ]; then
+    errorln "Properties file - Missing GCP_BUCKET_NAME."
+    return 1
+  fi
+  export GCP_BUCKET_NAME
+}
+
 check_work_environment || exit 1
 check_org_node || exit 1
 check_anchor_peers || exit 1
@@ -158,38 +167,32 @@ check_ordering_service_type || exit 1
 check_explorer_tools || exit 1
 check_debug_commands || exit 1
 check_names_nodes || exit 1
+check_gcp_bucket_name || exit 1
 
-# Path to docker-compose file according the work environment and node organization
+# Path to nodes docker-compose file according the work environment and node organization
 if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
 
-  # Set the compose file path for local environment
+  # Set the docker-compose file path for local environment
   export COMPOSE_FILE_PATH="docker/compose-net-all.yaml"
 
 elif [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
 
-  case "$ORG_NODE" in
-  orderer)
-    # Set the compose file path for orderer node
-    export COMPOSE_FILE_PATH="docker/compose-net-orderer.yaml"
-    ;;
-  developer)
-    # Set the compose file path for developer node
-    export COMPOSE_FILE_PATH="docker/compose-net-developer.yaml"
-    ;;
-  client)
-    # Set the compose file path for client node
-    export COMPOSE_FILE_PATH="docker/compose-net-client.yaml"
-    ;;
-  qa)
-    # Set the compose file path for QA node
-    export COMPOSE_FILE_PATH="docker/compose-net-qa.yaml"
-    ;;
-  *)
-    errorln "Invalid ORG_NODE value:$ORG_NODE"
+  # Associative array to map ORG_NODE to corresponding docker-compose file paths
+  declare -A compose_files=(
+    [orderer]="docker/compose-net-orderer.yaml"
+    [developer]="docker/compose-net-developer.yaml"
+    [client]="docker/compose-net-client.yaml"
+    [qa]="docker/compose-net-qa.yaml"
+  )
+
+  # Check if ORG_NODE is valid and set the compose file path
+  if [[ -n "${compose_files[$ORG_NODE]}" ]]; then
+    export COMPOSE_FILE_PATH="${compose_files[$ORG_NODE]}"
+  else
+    errorln "Invalid ORG_NODE value: $ORG_NODE"
     errorln "Allowed values: orderer, developer, client, qa. Exiting."
     exit 1
-    ;;
-  esac
+  fi
 
 else
 

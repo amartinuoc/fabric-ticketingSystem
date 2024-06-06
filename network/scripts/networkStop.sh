@@ -31,8 +31,10 @@ function networkStop() {
 
   # Stop docker services
   if [ "$EXPLORER_TOOL" = "true" ]; then
+    println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH stop
   fi
+  println "Docker-compose used: '$COMPOSE_FILE_PATH'"
   docker-compose -f $COMPOSE_FILE_PATH stop
 
   successln "Docker elements stopped successfully!"
