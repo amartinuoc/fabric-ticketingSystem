@@ -1,0 +1,88 @@
+{
+	"name": "explorer-network",
+	"version": "1.0.0",
+	"client": {
+	  	"tlsEnable": true,
+	  	"adminCredential": {
+			"id": "exploreradmin",
+			"password": "exploreradminpw"
+	  	},
+	  	"enableAuthentication": true,
+	  	"organization": "OrgClientMSP",
+	  	"connection": {
+			"timeout": {
+		  		"peer": {
+					"endorser": "300"
+		  		},
+		  		"orderer": "300"
+			}
+	  	}
+	},
+	"channels": {
+	  	"channeldev": {
+			"peers": {
+		  		"org_client_str": {},
+		  		"org_developer_str": {}
+			}
+	  	},
+	  	"channelqa": {
+			"peers": {
+		  		"org_client_str": {},
+		  		"org_qa_str": {}
+			}
+	  	}
+	},
+	"organizations": {
+	  	"OrgClientMSP": {
+			"mspid": "OrgClientMSP",
+			"adminPrivateKey": {
+				"path": "/tmp/crypto/peerOrganizations/orgclient.uoctfm.com/users/User1@orgclient.uoctfm.com/msp/keystore/priv_sk"
+			},
+			"peers": ["org_client_str"],
+			"signedCert": {
+				"path": "/tmp/crypto/peerOrganizations/orgclient.uoctfm.com/users/User1@orgclient.uoctfm.com/msp/signcerts/User1@orgclient.uoctfm.com-cert.pem"
+			}
+	  	},
+	  	"OrgDevMSP": {
+			"mspid": "OrgDevMSP",
+			"adminPrivateKey": {
+				"path": "/tmp/crypto/peerOrganizations/orgdev.uoctfm.com/users/User1@orgdev.uoctfm.com/msp/keystore/priv_sk"
+			},
+			"peers": ["org_developer_str"],
+			"signedCert": {
+				"path": "/tmp/crypto/peerOrganizations/orgdev.uoctfm.com/users/User1@orgdev.uoctfm.com/msp/signcerts/User1@orgdev.uoctfm.com-cert.pem"
+			}
+	  	},
+	  	"OrgQaMSP": {
+			"mspid": "OrgQaMSP",
+			"adminPrivateKey": {
+				"path": "/tmp/crypto/peerOrganizations/orgqa.uoctfm.com/users/User1@orgqa.uoctfm.com/msp/keystore/priv_sk"
+			},
+			"peers": ["org_qa_str"],
+			"signedCert": {
+				"path": "/tmp/crypto/peerOrganizations/orgqa.uoctfm.com/users/User1@orgqa.uoctfm.com/msp/signcerts/User1@orgqa.uoctfm.com-cert.pem"
+			}
+	  	}
+	},
+	"peers": {
+	  	"peer0.orgclient.uoctfm.com": {
+			"tlsCACerts": {
+				"path": "/tmp/crypto/peerOrganizations/orgclient.uoctfm.com/peers/peer0.orgclient.uoctfm.com/tls/ca.crt"
+			},
+			"url": "grpcs://org_client_str:7051"
+	  	},
+	  "peer0.orgdev.uoctfm.com": {
+			"tlsCACerts": {
+				"path": "/tmp/crypto/peerOrganizations/orgdev.uoctfm.com/peers/peer0.orgdev.uoctfm.com/tls/ca.crt"
+			},
+			"url": "grpcs://org_developer_str:9051"
+	  	},
+	  "peer0.orgqa.uoctfm.com": {
+			"tlsCACerts": {
+				"path": "/tmp/crypto/peerOrganizations/orgqa.uoctfm.com/peers/peer0.orgqa.uoctfm.com/tls/ca.crt"
+			},
+			"url": "grpcs://org_qa_str:11051"
+	  	}
+	}
+}
+  

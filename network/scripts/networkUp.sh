@@ -15,22 +15,92 @@ DIR_ORDERER="organizations/ordererOrganizations"
 DIR_ORGS="organizations/peerOrganizations"
 
 # Cloud storage directory
-DIR_CLOUD_STORAGE="cloud-storage"
+DIR_CLOUD_STORAGE="cloud_storage"
+
+function mountCloudStorage() {
+
+  local mount_point="${NETWORK_HOME}/${DIR_CLOUD_STORAGE}"
+  local bucket_name=$GCP_BUCKET_NAME
+
+  # Check if the mount point is already mounted
+  if ! mountpoint -q "$mount_point"; then
+    # Create the mount point directory if it doesn't exist
+    mkdir -p "$mount_point"
+    rm -rf "$mount_point"/*
+    # Attempt to mount the bucket
+    gcsfuse "$bucket_name" "$mount_point"
+    if [ $? -eq 0 ]; then
+      println "Bucket is now mounted at '$mount_point'"
+    else
+      errorln "Error mounting the bucket. Trying to unmount and remount."
+      # Attempt to unmount the mount point
+      fusermount -u "$mount_point" 2>/dev/null
+      sleep 2
+      # Attempt to mount the bucket again
+      gcsfuse "$bucket_name" "$mount_point"
+      if [ $? -eq 0 ]; then
+        println "Bucket mounted at '$mount_point' after retrying"
+      else
+        errorln "Error mounting the bucket after retrying"
+        errorln "Exiting"
+        errorln
+        exit 1
+      fi
+    fi
+  else
+    println "Bucket already mounted at '$mount_point'"
+  fi
+}
+
+function updateLocalHostsFile() {
+
+  local hosts_file="/etc/hosts"
+  local gcs_hosts_file="$DIR_CLOUD_STORAGE/hosts.txt"
+
+  # Check if the GCS hosts file exists
+  if [ ! -f "$gcs_hosts_file" ]; then
+    errorln "Required file in CloudStorage not found: $gcs_hosts_file"
+    errorln "Exiting"
+    errorln
+    exit 1
+  fi
+
+  # Check if the comment line exists
+  if ! grep -q "# Ip-Host for blockchain network" "$hosts_file"; then
+    echo "# Ip-Host for blockchain network" | sudo tee -a "$hosts_file"
+  fi
+
+  infoln "Trying read ip info for rest of nodes from bucket"
+
+  # Read the GCS hosts file and update the local hosts file
+  while IFS= read -r line; do
+    local ip=$(echo "$line" | awk '{print $1}')
+    local name=$(echo "$line" | awk '{print $2}')
+
+    if grep -q "$name" "$hosts_file"; then
+      sudo sed -i "s/^.*$name$/$ip $name/" "$hosts_file"
+      println "Updated $name with IP $ip in '$hosts_file'"
+    else
+      echo "$ip $name" | sudo tee -a "$hosts_file"
+      println "Added $name with IP $ip to '$hosts_file'"
+    fi
+  done <"$gcs_hosts_file"
+}
 
 # Function to check if the cloud storage directory exists and is mounted
-function checkCloudStorageMount() {
+function checkCloudStorageIsMount() {
 
-  local cloud_storage_path="${NETWORK_HOME}/${DIR_CLOUD_STORAGE}"
+  local mount_point="${NETWORK_HOME}/${DIR_CLOUD_STORAGE}"
 
   # Check if the cloud storage directory exists
-  if [ ! -d "$cloud_storage_path" ]; then
-    warnln "CloudStorage directory does not exist: $cloud_storage_path"
+  if [ ! -d "$mount_point" ]; then
+    warnln "CloudStorage directory does not exist: '$mount_point'"
     return 1
   fi
 
-  # Check if the cloud storage directory is mounted using gcsfuse
-  if ! mount | grep "on $cloud_storage_path type fuse.gcsfuse" >/dev/null; then
-    warnln "CloudStorage is not mounted or not using gcsfuse: $cloud_storage_path"
+  # Check if the cloud storage directory is mounted
+  if ! mountpoint -q "$mount_point"; then
+    warnln "CloudStorage is not mounted or not using gcsfuse: '$mount_point'"
     return 1
   fi
 
@@ -38,7 +108,7 @@ function checkCloudStorageMount() {
 }
 
 # Function to check if the cloud storage directory contains the required directories and they are not empty
-function checkCloudStorageContent() {
+function checkCloudStorageHasContent() {
   local required_dirs=("ordererOrganizations" "peerOrganizations")
 
   for dir in "${required_dirs[@]}"; do
@@ -49,7 +119,7 @@ function checkCloudStorageContent() {
       return 1
     # Check if the directory is not empty
     elif [ -z "$(ls -A "$relative_path")" ]; then
-      warnln "Directory $dir in CloudStorage is empty"
+      warnln "Directory '$dir' in CloudStorage is empty"
       return 1
     fi
   done
@@ -110,7 +180,7 @@ function createOrgsAndOrdererArtifacts() {
   # Check if WORK_ENVIRONMENT is 'cloud'
   if [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
     # Check if cloud storage is mounted
-    if checkCloudStorageMount; then
+    if checkCloudStorageIsMount; then
       # copy Organizations artifacts from local to cloud
       cp -r "organizations/ordererOrganizations" "$DIR_CLOUD_STORAGE"
       cp -r "organizations/peerOrganizations" "$DIR_CLOUD_STORAGE"
@@ -128,6 +198,7 @@ function createAndStartDockerElements() {
   infoln "\nStarting docker elements: containers, volumes, and networks"
 
   # Start docker services
+  println "Docker-compose used: '$COMPOSE_FILE_PATH'"
   docker-compose -f $COMPOSE_FILE_PATH up -d
 
   successln "Docker elements started successfully!"
@@ -141,16 +212,22 @@ function networkUp() {
   # Check if WORK_ENVIRONMENT is 'cloud'
   if [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
     println
-    # Check if cloud storage is mounted and contains required directories
-    if checkCloudStorageMount && checkCloudStorageContent; then
-      # copy Organizations artifacts from cloud to local
-      cp -r "$DIR_CLOUD_STORAGE/ordererOrganizations" "organizations/"
-      cp -r "$DIR_CLOUD_STORAGE/peerOrganizations" "organizations/"
-      println "Organizations artifacts: cloudStorage ==> local"
+    mountCloudStorage
+    # Check if cloud storage is mounted
+    if checkCloudStorageIsMount; then
+      # update file /etc/host with another IP nodes
+      updateLocalHostsFile
+      # Check if cloud storage contains required directories
+      if checkCloudStorageHasContent; then
+        # copy Organizations artifacts from cloud to local
+        cp -r "$DIR_CLOUD_STORAGE/ordererOrganizations" "organizations/"
+        cp -r "$DIR_CLOUD_STORAGE/peerOrganizations" "organizations/"
+        println "Organizations artifacts: local <== cloudStorage"
+      fi
     fi
   fi
 
-  # generate orgs and orderer artifacts if they don't exist
+  # generate orgs and orderer artifacts if they don't exist locally
   if ! existOrgsAndOrdererArtifacts; then
     # call the function to create the artifacts
     createOrgsAndOrdererArtifacts

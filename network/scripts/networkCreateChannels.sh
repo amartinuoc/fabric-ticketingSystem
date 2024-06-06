@@ -280,7 +280,46 @@ function startExplorerTool() {
     # Check for docker prerequisites
     checkPrereqsDocker
 
+    # Set the path to the profile directory
+    local path_profile="explorer/connection-profile"
+    local profile_configured="${path_profile}/profile-uoctfm.json"
+
+    # Conf the connection profile based on ORG_NODE
+    case "$ORG_NODE" in
+    orderer | developer | client | qa)
+      profile_org="${path_profile}/profile-uoctfm-${ORG_NODE}.json"
+      if [[ -f "$profile_org" ]]; then
+        cp "$profile_org" "$profile_configured"
+        println "Profile in '$profile_org' is used"
+      else
+        errorln "File '$profile_org' does not exist."
+        errorln "Exiting"
+        errorln
+        exit 1
+      fi
+      ;;
+    *)
+      errorln "Invalid ORG_NODE value: $ORG_NODE"
+      errorln "Allowed values: orderer, developer, client, qa."
+      errorln "Exiting"
+      errorln
+      exit 1
+      ;;
+    esac
+
+    temp_file="${path_profile}/temp.json"
+
+    println "Using PEER0_ORGCLIENT='$PEER0_ORGCLIENT', PEER0_ORGDEV='$PEER0_ORGDEV', PEER0_ORGQA='$PEER0_ORGQA' to update profile"
+
+    # Update the connection profile with real peer names
+    sed -e "s/org_client_str/$PEER0_ORGCLIENT/g" \
+      -e "s/org_developer_str/$PEER0_ORGDEV/g" \
+      -e "s/org_qa_str/$PEER0_ORGQA/g" "$profile_configured" >"$temp_file"
+
+    mv "$temp_file" "$profile_configured"
+
     # Start docker services
+    println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH up -d
     successln "Docker elements for Explorer tool started successfully!"
 

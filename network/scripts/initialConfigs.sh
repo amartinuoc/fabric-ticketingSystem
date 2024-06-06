@@ -7,7 +7,6 @@ TARGET_DIR="$HOME/fabric-ticketingSystem"
 NETWORK_HOME="$TARGET_DIR/network"
 MOUNT_POINT="$NETWORK_HOME/cloud_storage"
 BUCKET_NAME="bucket-tfm-test"
-FSTAB_ENTRY="$BUCKET_NAME "$MOUNT_POINT" gcsfuse rw,allow_other,implicit_dirs,dir_mode=777,file_mode=777 0 0"
 
 # Log function
 log() {
@@ -24,25 +23,11 @@ install_packets() {
     # Install Git, cURL, Docker, Docker-compose, Go, Jq, and OpenJDK 11
     sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk -y
 
-    # Install Ggcsfuse
+    # Install gcsfuse
     export GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s)
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/gcsfuse.gpg
     echo "deb [signed-by=/usr/share/keyrings/gcsfuse.gpg] https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
     sudo apt update && sudo apt install gcsfuse -y
-}
-
-configure_docker() {
-    # Start Docker service
-    log "Starting Docker service..."
-    sudo systemctl start docker
-
-    # Enable Docker to start on system boot
-    log "Enabling Docker service to start on system boot..."
-    sudo systemctl enable docker
-
-    # Add user to the Docker group
-    log "Adding user to the Docker group..."
-    sudo usermod -aG docker $USER
 }
 
 clone_repo() {
@@ -54,38 +39,79 @@ clone_repo() {
     fi
 }
 
-mount_bucket() {
+configure_docker() {
+    # Enable Docker to start on boot
+    log "Enabling Docker service to start on system boot..."
+    sudo systemctl enable docker
 
-    cd $NETWORK_HOME || {
-        log "Error navigating to directory '$NETWORK_HOME'"
-        exit 1
-    }
-
-    # Create the cloud_storage directory if it does not exist
-    mkdir -p $MOUNT_POINT
-
-    # Mount the Google Cloud Storage bucket
-    gcsfuse $BUCKET_NAME $MOUNT_POINT
-
-    log "Bucket mounted at '$MOUNT_POINT'"
-
-    # Configure automatic mount at system startup
-    if ! grep -q "$MOUNT_POINT" /etc/fstab; then
-        echo "$FSTAB_ENTRY" | sudo tee -a /etc/fstab
-        log "Entry added to /etc/fstab for automatic mounting."
-    else
-        log "The entry for '$MOUNT_POINT' already exists in /etc/fstab."
-    fi
+    # Add user to the Docker group
+    log "Adding user to the Docker group..."
+    sudo usermod -aG docker $USER
 }
 
-# Install necessary packets
-install_packets
+create_systemd_service_gcp_init() {
+    # Define the name of the current user
+    local user=$(whoami)
+    # Define the paths for the original and final scripts
+    local pathOrigScript="scripts/gcp_init.sh"
+    local pathFinScript="/usr/local/bin/gcp_init.sh"
 
-# Configure service docker
-configure_docker
+    log "Creating Systemd service to init gcp on system boot..."
+
+    if [ ! -d "$NETWORK_HOME" ]; then
+        log "'$NETWORK_HOME' does not exist. Exiting."
+        log
+        exit 1
+    fi
+
+    cd $NETWORK_HOME
+
+    if [ ! -f "$pathOrigScript" ]; then
+        log "'$pathOrigScript' does not exist. Exiting."
+        log
+        exit 1
+    fi
+
+    # Copy the original script to the final location
+    sudo cp $pathOrigScript $pathFinScript
+    # Set execute permissions for the script
+    sudo chmod +x $pathFinScript
+
+    # Create the systemd service file
+    cat <<EOF | sudo tee /etc/systemd/system/gcp_init.service >/dev/null
+[Unit]
+Description=GCP Initialization Script
+After=network.target
+
+[Service]
+ExecStart=$pathFinScript
+StandardOutput=journal
+StandardError=journal
+Restart=always
+User=$user
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Reload systemd services
+    sudo systemctl daemon-reload
+
+    # Enable the service to start on boot
+    sudo systemctl enable gcp_init.service
+}
+
+# Install necessary packages
+install_packets
 
 # Clone the repository
 clone_repo
 
-# Mount the Google Cloud Storage bucket
-mount_bucket
+# Configure Docker service
+configure_docker
+
+# Create the systemd service for GCP initialization
+create_systemd_service_gcp_init
+
+log "Now you can restart the system. Use:"
+echo "sudo reboot"
