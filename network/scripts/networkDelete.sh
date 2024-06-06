@@ -24,11 +24,12 @@ function networkDelete() {
   rm -rf organizations/ordererOrganizations
   rm -f chaincodes/*.tar.gz
   rm -rf channel-artifacts/*
+  rm -f explorer/connection-profile/profile-uoctfm.json
   rm -rf logs
 
   # Check if WORK_ENVIRONMENT is 'cloud'
   if [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
-    println "Deleting Organizations artifacts in cloudStorage dir"
+    println "Deleting Organizations artifacts in cloudStorage directory"
     # Remove organizations artifacts inside the cloud storage directory
     rm -rf $DIR_CLOUD_STORAGE/peerOrganizations
     rm -rf $DIR_CLOUD_STORAGE/ordererOrganizations

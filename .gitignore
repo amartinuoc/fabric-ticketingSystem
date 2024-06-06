@@ -8,3 +8,4 @@ network/organizations/ordererOrganizations/
 network/organizations/peerOrganizations/
 network/cloud_storage
 network/explorer/connection-profile/profile-uoctfm.json
+network/scripts/networkAll.sh

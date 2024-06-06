@@ -7,7 +7,6 @@ TARGET_DIR="$HOME/fabric-ticketingSystem"
 NETWORK_HOME="$TARGET_DIR/network"
 MOUNT_POINT="$NETWORK_HOME/cloud_storage"
 BUCKET_NAME="bucket-tfm-test"
-FSTAB_ENTRY="$BUCKET_NAME "$MOUNT_POINT" gcsfuse rw,allow_other,implicit_dirs,dir_mode=777,file_mode=777 0 0"
 
 # Log function
 log() {
@@ -41,7 +40,7 @@ clone_repo() {
 }
 
 configure_docker() {
-    # Enable Docker to start on system boot
+    # Enable Docker to start on boot
     log "Enabling Docker service to start on system boot..."
     sudo systemctl enable docker
 
@@ -58,6 +57,20 @@ create_systemd_service_gcp_init() {
     local pathFinScript="/usr/local/bin/gcp_init.sh"
 
     log "Creating Systemd service to init gcp on system boot..."
+
+    if [ ! -d "$NETWORK_HOME" ]; then
+        log "'$NETWORK_HOME' does not exist. Exiting."
+        log
+        exit 1
+    fi
+
+    cd $NETWORK_HOME
+
+    if [ ! -f "$pathOrigScript" ]; then
+        log "'$pathOrigScript' does not exist. Exiting."
+        log
+        exit 1
+    fi
 
     # Copy the original script to the final location
     sudo cp $pathOrigScript $pathFinScript
@@ -100,4 +113,5 @@ configure_docker
 # Create the systemd service for GCP initialization
 create_systemd_service_gcp_init
 
-echo "Now you can restart the system"
+log "Now you can restart the system. Use:"
+echo "sudo reboot"

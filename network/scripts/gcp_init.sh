@@ -10,7 +10,7 @@ HOSTS_FILE="/etc/hosts"
 GCS_HOSTS_FILE="$MOUNT_POINT/hosts.txt"
 HOSTNAME=$(hostname)
 LOCAL_IP=$(hostname -I | awk '{print $1}')
-LOG_FILE="/tmp/log.txt"
+LOG_FILE="/tmp/gcp_init.txt"
 LOCK_FILE="/tmp/gcp_init.lock"
 
 # Log function
@@ -44,11 +44,12 @@ peer0orgqa)
   ;;
 *)
   log "Unrecognized hostname: $HOSTNAME" | tee -a "$LOG_FILE"
+  log "Exiting" | tee -a "$LOG_FILE"
   exit 1
   ;;
 esac
 
-# Function to mount the GCP bucket
+# Function to mount the GCS bucket
 mount_gcs_bucket() {
   if ! mountpoint -q "$MOUNT_POINT"; then
     mkdir -p "$MOUNT_POINT"
@@ -87,7 +88,7 @@ update_gcs_hosts_file() {
   fi
 }
 
-# Function to unmount the GCP bucket
+# Function to unmount the GCS bucket
 unmount_gcs_bucket() {
   if mountpoint -q "$MOUNT_POINT"; then
     fusermount -u "$MOUNT_POINT"
@@ -101,6 +102,7 @@ unmount_gcs_bucket() {
 }
 
 mount_gcs_bucket
+sleep 1
 update_gcs_hosts_file
 sleep 1
 unmount_gcs_bucket
