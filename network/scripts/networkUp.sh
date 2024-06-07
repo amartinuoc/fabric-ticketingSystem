@@ -28,18 +28,18 @@ function mountCloudStorage() {
     mkdir -p "$mount_point"
     rm -rf "$mount_point"/*
     # Attempt to mount the bucket
-    gcsfuse "$bucket_name" "$mount_point"
+    gcsfuse "$bucket_name" "$mount_point" >/dev/null 2>&1
     if [ $? -eq 0 ]; then
-      println "Bucket is now mounted at '$mount_point'"
+      println "Bucket '$bucket_name' is now mounted at '$mount_point'"
     else
       errorln "Error mounting the bucket. Trying to unmount and remount."
       # Attempt to unmount the mount point
       fusermount -u "$mount_point" 2>/dev/null
       sleep 2
       # Attempt to mount the bucket again
-      gcsfuse "$bucket_name" "$mount_point"
+      gcsfuse "$bucket_name" "$mount_point" >/dev/null 2>&1
       if [ $? -eq 0 ]; then
-        println "Bucket mounted at '$mount_point' after retrying"
+        println "Bucket '$bucket_name' mounted at '$mount_point' after retrying"
       else
         errorln "Error mounting the bucket after retrying"
         errorln "Exiting"
@@ -48,43 +48,8 @@ function mountCloudStorage() {
       fi
     fi
   else
-    println "Bucket already mounted at '$mount_point'"
+    println "Bucket '$bucket_name' already mounted at '$mount_point'"
   fi
-}
-
-function updateLocalHostsFile() {
-
-  local hosts_file="/etc/hosts"
-  local gcs_hosts_file="$DIR_CLOUD_STORAGE/hosts.txt"
-
-  # Check if the GCS hosts file exists
-  if [ ! -f "$gcs_hosts_file" ]; then
-    errorln "Required file in CloudStorage not found: $gcs_hosts_file"
-    errorln "Exiting"
-    errorln
-    exit 1
-  fi
-
-  # Check if the comment line exists
-  if ! grep -q "# Ip-Host for blockchain network" "$hosts_file"; then
-    echo "# Ip-Host for blockchain network" | sudo tee -a "$hosts_file"
-  fi
-
-  infoln "Trying read ip info for rest of nodes from bucket"
-
-  # Read the GCS hosts file and update the local hosts file
-  while IFS= read -r line; do
-    local ip=$(echo "$line" | awk '{print $1}')
-    local name=$(echo "$line" | awk '{print $2}')
-
-    if grep -q "$name" "$hosts_file"; then
-      sudo sed -i "s/^.*$name$/$ip $name/" "$hosts_file"
-      println "Updated $name with IP $ip in '$hosts_file'"
-    else
-      echo "$ip $name" | sudo tee -a "$hosts_file"
-      println "Added $name with IP $ip to '$hosts_file'"
-    fi
-  done <"$gcs_hosts_file"
 }
 
 # Function to check if the cloud storage directory exists and is mounted
@@ -107,6 +72,56 @@ function checkCloudStorageIsMount() {
   return 0
 }
 
+function updateLocalHostsFile() {
+
+  local hosts_file="/etc/hosts"
+  local gcs_hosts_file="$DIR_CLOUD_STORAGE/hosts.txt"
+
+  # Check if the GCS hosts file exists
+  if [ ! -f "$gcs_hosts_file" ]; then
+    errorln "Required file in CloudStorage not found: $gcs_hosts_file"
+    errorln "Exiting"
+    errorln
+    exit 1
+  fi
+
+  # Check if the comment line exists
+  if ! grep -q "# Ip-Host for fabric nodes" "$hosts_file"; then
+    echo -e "\n# Ip-Host for fabric nodes" | sudo tee -a "$hosts_file" >/dev/null
+  fi
+
+  infoln "Trying read Hosts info for fabric nodes from CloudStorage"
+
+  operation_success=true
+
+  # Read the GCS hosts file and update the local hosts file
+  while IFS= read -r line; do
+    local ip=$(echo "$line" | awk '{print $1}')
+    local name=$(echo "$line" | awk '{print $2}')
+
+    if grep -q "$name" "$hosts_file"; then
+      if sudo sed -i "s/^.*$name$/$ip $name/" "$hosts_file"; then
+        println "Updated $name with IP $ip in '$hosts_file'"
+      else
+        operation_success=false
+        errorln "Failed to update $name with IP $ip in '$hosts_file'"
+      fi
+    else
+      if echo "$ip $name" | sudo tee -a "$hosts_file" >/dev/null; then
+        println "Added $name with IP $ip to '$hosts_file'"
+      else
+        operation_success=false
+        errorln "Failed to add $name with IP $ip to '$hosts_file'"
+      fi
+    fi
+  done <"$gcs_hosts_file"
+
+  # Log success message if all operations were successful
+  if [ "$operation_success" = true ]; then
+    successln "Hosts info for fabric nodes has been updated successfully in '$hosts_file'"
+  fi
+}
+
 # Function to check if the cloud storage directory contains the required directories and they are not empty
 function checkCloudStorageHasContent() {
   local required_dirs=("ordererOrganizations" "peerOrganizations")
@@ -115,11 +130,11 @@ function checkCloudStorageHasContent() {
     local relative_path="$DIR_CLOUD_STORAGE/$dir"
     # Check if the required directory exists
     if [ ! -d "$relative_path" ]; then
-      warnln "Required directory in CloudStorage not found: $dir"
+      println "Expected directory in CloudStorage not found: $dir"
       return 1
     # Check if the directory is not empty
     elif [ -z "$(ls -A "$relative_path")" ]; then
-      warnln "Directory '$dir' in CloudStorage is empty"
+      println "Directory '$dir' in CloudStorage is empty"
       return 1
     fi
   done
@@ -159,7 +174,7 @@ function createOrgsAndOrdererArtifacts() {
   checkFabricBinaries
   checkFabricConf
 
-  infoln "\nCreating Organizations artifacts using cryptogen tool"
+  infoln "\nCreating Organizations artifacts locally using cryptogen tool"
   export PATH=${NETWORK_HOME}/../bin:${NETWORK_HOME}:$PATH
   export FABRIC_CFG_PATH=${NETWORK_HOME}/../config
 
@@ -175,7 +190,7 @@ function createOrgsAndOrdererArtifacts() {
   createArtifactsOneOrg QA
   createArtifactsOneOrg Orderer
 
-  successln "Organizations artifacts created successfully!"
+  successln "Organizations artifacts created locally successfully!"
 
   # Check if WORK_ENVIRONMENT is 'cloud'
   if [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
@@ -215,7 +230,7 @@ function networkUp() {
     mountCloudStorage
     # Check if cloud storage is mounted
     if checkCloudStorageIsMount; then
-      # update file /etc/host with another IP nodes
+      # update file /etc/hosts with all IP fabric nodes
       updateLocalHostsFile
       # Check if cloud storage contains required directories
       if checkCloudStorageHasContent; then
