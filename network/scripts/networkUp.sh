@@ -197,9 +197,10 @@ function createOrgsAndOrdererArtifacts() {
     # Check if cloud storage is mounted
     if checkCloudStorageIsMount; then
       # copy Organizations artifacts from local to cloud
+      println "Organizations artifacts: local ==> cloudStorage. Starting copy..."
       cp -r "organizations/ordererOrganizations" "$DIR_CLOUD_STORAGE"
       cp -r "organizations/peerOrganizations" "$DIR_CLOUD_STORAGE"
-      println "Organizations artifacts: local ==> cloudStorage"
+      successln "Organizations artifacts copied to cloudStorage successfully!"
     fi
   fi
 
@@ -232,12 +233,13 @@ function networkUp() {
     if checkCloudStorageIsMount; then
       # update file /etc/hosts with all IP fabric nodes
       updateLocalHostsFile
-      # Check if cloud storage contains required directories
-      if checkCloudStorageHasContent; then
+      # Check if cloud storage contains required content and artifacts don't exist locally
+      if checkCloudStorageHasContent && ! existOrgsAndOrdererArtifacts; then
         # copy Organizations artifacts from cloud to local
+        println "Organizations artifacts: cloudStorageal ==> local. Starting copy ..."
         cp -r "$DIR_CLOUD_STORAGE/ordererOrganizations" "organizations/"
         cp -r "$DIR_CLOUD_STORAGE/peerOrganizations" "organizations/"
-        println "Organizations artifacts: local <== cloudStorage"
+        successln "Organizations artifacts copied to local successfully!"
       fi
     fi
   fi
