@@ -80,10 +80,10 @@ update_gcs_hosts_file() {
 
   # Find and update the line with the complete hostname
   if grep -q "$HOSTNAME_COMPLETE" "$GCS_HOSTS_FILE"; then
-    sudo sed -i "s/^.*$HOSTNAME_COMPLETE$/$LOCAL_IP $HOSTNAME_COMPLETE/" "$GCS_HOSTS_FILE"
+    sed -i "s/^.*$HOSTNAME_COMPLETE$/$LOCAL_IP $HOSTNAME_COMPLETE/" "$GCS_HOSTS_FILE"
     log "Updated $HOSTNAME_COMPLETE with IP $LOCAL_IP in $GCS_HOSTS_FILE" | tee -a "$LOG_FILE"
   else
-    echo "$LOCAL_IP $HOSTNAME_COMPLETE" | sudo tee -a "$GCS_HOSTS_FILE"
+    echo "$LOCAL_IP $HOSTNAME_COMPLETE" | tee -a "$GCS_HOSTS_FILE"
     log "Added $HOSTNAME_COMPLETE with IP $LOCAL_IP to $GCS_HOSTS_FILE" | tee -a "$LOG_FILE"
   fi
 }

@@ -364,7 +364,7 @@ generateTitleLogScript() {
   # Concatenate the text of the environment and the organization node (if available)
   local result="$environment"
   if [[ ! -z "$org" ]]; then
-    result+=" , $org"
+    result+=", $org"
   fi
 
   # Add closing brackets
