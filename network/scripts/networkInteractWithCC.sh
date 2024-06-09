@@ -26,6 +26,7 @@ fi
 CHANNEL_NAME=$1
 CC_NAME="ticketingSystemContract"
 ORG_IDENTITY="client"
+CC_LOG_FILE=logs/logCC.txt
 
 # Check if a second parameter was provided
 if [ $# -eq 2 ]; then
@@ -148,7 +149,7 @@ function invokeAddCommentForTicketInProgress() {
     return 1
   fi
   local comment="Continuing the development of the chaincode. Asset class design has been completed. Alvaro"
-  local ctor='{"Args":["addCommentForTicketInProgress","'$ticketId'","'$comment'"]}'
+  local ctor='{"Args":["AddCommentForTicketInProgress","'$ticketId'","'$comment'"]}'
   makeInvokeCC "$ctor"
 }
 

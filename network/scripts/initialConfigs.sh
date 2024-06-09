@@ -21,7 +21,7 @@ install_packets() {
     log "Installing some prerequisites..."
 
     # Install Git, cURL, Docker, Docker-compose, Go, Jq, and OpenJDK 11
-    sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk -y
+    sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk openjdk-17-jdk -y
 
     # Check if gcsfuse is installed
     if ! command -v gcsfuse &>/dev/null; then

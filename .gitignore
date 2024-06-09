@@ -3,9 +3,11 @@ network/chaincodes/java/ticketingSystemContract/bin/
 network/chaincodes/java/ticketingSystemContract/build/
 network/chaincodes/*.tar.gz
 network/channel-artifacts/
+network/cloud_storage
+network/explorer/connection-profile/profile-uoctfm.json
 network/logs/
 network/organizations/ordererOrganizations/
 network/organizations/peerOrganizations/
-network/cloud_storage
-network/explorer/connection-profile/profile-uoctfm.json
 network/scripts/networkAll.sh
+network/apps/java/ticketingSystemClientApp/target
+network/apps/java/ticketingSystemClientApp/src/main/resources/orgclient.uoctfm.com

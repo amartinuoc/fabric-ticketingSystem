@@ -1,0 +1,25 @@
+
+version: '3.7'
+
+networks:
+  uoctfm_network_id:
+    name: uoctfm_network
+
+services:
+
+  client.app.uoctfm.com:
+    build: ./
+    image: uoctfm/clientapp:latest
+    container_name: client.app.uoctfm.com
+    restart: on-failure
+    stdin_open: true
+    tty: true
+    environment:
+      - APP_CHANNEL=${CLIENT_APP_CHANNEL}
+      - APP_CC_NAME=${CC_NAME:-ticketingSystemContract}
+      - APP_ENDPOINT=${PEER0_ORGCLIENT}
+      - APP_AUTH=${PEER0_ORGCLIENT}
+    ports:
+      - ${CLIENT_APP_PORT:-8888}:8888
+    networks:
+      - uoctfm_network_id
