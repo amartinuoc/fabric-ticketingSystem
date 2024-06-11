@@ -95,18 +95,62 @@ check_ordering_service_type() {
   esac
 }
 
-# Function to check if EXPLORER_TOOL is valid
-check_explorer_tools() {
+# Function to check if EXPLORER_TOOL parameters are valid
+check_explorer_tools_params() {
+
+  # Verify that EXPLORER_TOOL is either true or false
   export EXPLORER_TOOL=$(echo "$EXPLORER_TOOL" | tr '[:upper:]' '[:lower:]')
   case "$EXPLORER_TOOL" in
-  true | false)
-    return 0
-    ;;
+  true | false) ;;
   *)
     errorln "Properties file - Invalid EXPLORER_TOOL:$EXPLORER_TOOL. Allowed values: true, false."
     return 1
     ;;
   esac
+
+  # Verify that EXPLORER_TOOL_PORT is a valid port number.
+  export EXPLORER_TOOL_PORT
+  if ! [[ "$EXPLORER_TOOL_PORT" =~ ^[0-9]+$ ]] || [ "$EXPLORER_TOOL_PORT" -lt 1 ] || [ "$EXPLORER_TOOL_PORT" -gt 65535 ]; then
+    errorln "Properties file - Invalid EXPLORER_TOOL_PORT:$EXPLORER_TOOL_PORT. Must be a valid port number (1-65535)."
+    return 1
+  fi
+}
+
+# Function to check if CLIENT_APP parameters are valid
+check_client_app_params() {
+  export CLIENT_APP=$(echo "$CLIENT_APP" | tr '[:upper:]' '[:lower:]')
+
+  # Verify that CLIENT_APP is either true or false
+  case "$CLIENT_APP" in
+  true | false) ;;
+  *)
+    errorln "Properties file - Invalid CLIENT_APP:$CLIENT_APP. Allowed values: true, false."
+    return 1
+    ;;
+  esac
+
+  # Verify that CLIENT_APP_PORT is a valid port number
+  export CLIENT_APP_PORT
+  if ! [[ "$CLIENT_APP_PORT" =~ ^[0-9]+$ ]] || [ "$CLIENT_APP_PORT" -lt 1 ] || [ "$CLIENT_APP_PORT" -gt 65535 ]; then
+    errorln "Properties file - Invalid CLIENT_APP_PORT:$CLIENT_APP_PORT. Must be a valid port number (1-65535)."
+    return 1
+  fi
+
+  # Verify that CLIENT_APP_CHANNEL is either channeldev or channelqa
+  export CLIENT_APP_CHANNEL
+  case "$CLIENT_APP_CHANNEL" in
+  channeldev | channelqa) ;;
+  *)
+    errorln "Properties file - Invalid CLIENT_APP_CHANNEL:$CLIENT_APP_CHANNEL. Allowed values: channeldev, channelqa."
+    return 1
+    ;;
+  esac
+
+  if [ "$CLIENT_APP" = "true" ] && [ "$ID_CC_END_POLICY" = 2 ]; then
+    warnln "Properties file - Current value for CLIENT_APP: $CLIENT_APP"
+    warnln "Client App needs ID_CC_END_POLICY=1 for network to work. ID_CC_END_POLICY=1 now!"
+    export CC_END_POLICY="OR('Org1.member','Org2.member')"
+  fi
 }
 
 # Function to check if DEBUG_COMMANDS is valid
@@ -164,7 +208,8 @@ check_org_node || exit 1
 check_anchor_peers || exit 1
 check_cc_end_policy || exit 1
 check_ordering_service_type || exit 1
-check_explorer_tools || exit 1
+check_explorer_tools_params || exit 1
+check_client_app_params || exit 1
 check_debug_commands || exit 1
 check_names_nodes || exit 1
 check_gcp_bucket_name || exit 1
@@ -208,19 +253,22 @@ export EXPLORER_CONFIG_FILE_PATH=${NETWORK_HOME}/explorer/config.json
 export EXPLORER_PROFILE_DIR_PATH=${NETWORK_HOME}/explorer/connection-profile
 export FABRIC_CRYPTO_PATH=${NETWORK_HOME}/organizations
 
+# Set environment variables for the Client App configuration
+export CLIENT_APP_COMPOSE_FILE_PATH="apps/java/ticketingSystemClientApp/compose-app.yaml"
+
 # Set specific node names according the work environment
 if [[ "$WORK_ENVIRONMENT" == "local" ]]; then
   # Set localhost for local environment
-  ORDERER_NAME="localhost"
-  PEER0_ORGDEV_NAME="localhost"
-  PEER0_ORGCLIENT_NAME="localhost"
-  PEER0_ORGQA_NAME="localhost"
+  export ORDERER_NAME="localhost"
+  export PEER0_ORGDEV_NAME="localhost"
+  export PEER0_ORGCLIENT_NAME="localhost"
+  export PEER0_ORGQA_NAME="localhost"
 elif [[ "$WORK_ENVIRONMENT" == "cloud" ]]; then
   # Set the specific names for cloud environment
-  ORDERER_NAME=$ORDERER
-  PEER0_ORGDEV_NAME=$PEER0_ORGDEV
-  PEER0_ORGCLIENT_NAME=$PEER0_ORGCLIENT
-  PEER0_ORGQA_NAME=$PEER0_ORGQA
+  export ORDERER_NAME=$ORDERER
+  export PEER0_ORGDEV_NAME=$PEER0_ORGDEV
+  export PEER0_ORGCLIENT_NAME=$PEER0_ORGCLIENT
+  export PEER0_ORGQA_NAME=$PEER0_ORGQA
 else
   errorln "Invalid WORK_ENVIRONMENT:$WORK_ENVIRONMENT"
   errorln "Allowed values: local, cloud. Exiting."

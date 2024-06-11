@@ -27,7 +27,7 @@ else
   CC_VERSION=$2
 fi
 
-CC_NAME=$CC_PROJECT
+export CC_NAME=$CC_PROJECT
 CC_LABEL="${CC_NAME}_${CC_VERSION}"
 CC_PACKAGE="chaincodes/"${CC_NAME}_${CC_VERSION}".tar.gz"
 CC_PROJECT_PATH="chaincodes/java/$CC_PROJECT"
@@ -203,4 +203,53 @@ function deployChaincode() {
 
 }
 
+function startClientApp() {
+
+  if [ "$CLIENT_APP" = "true" ]; then
+
+    infoln "\nStarting Client App"
+
+    # Check for neccesary files
+    checkClientAppFiles
+
+    # Check for docker prerequisites
+    checkPrereqsDocker
+
+    # check for openjdk 17
+    checkPrereqsJava17
+
+    local client_app_project_path=apps/java/ticketingSystemClientApp
+
+    rm -rf $client_app_project_path/src/main/resources/orgclient.uoctfm.com/
+    cp -r organizations/peerOrganizations/orgclient.uoctfm.com/ $client_app_project_path/src/main/resources/
+
+    # Compile chaincode java code with openjdk 17
+    println "Source code of App Client can be found at '$client_app_project_path/src'"
+    cd "$client_app_project_path"
+    rm -rf target
+    [ "$DEBUG_COMMANDS" = true ] && set -x
+    ./mvnw clean package
+    res=$?
+    { set +x; } 2>/dev/null
+    cd $NETWORK_HOME
+
+    verifyResult $res "App Client Java code compilation has failed!"
+    successln "App Client Java code compilation finish!"
+
+    local jar_file="$client_app_project_path/target/FabricClientApplication-0.0.1-SNAPSHOT.jar"
+    if [[ ! -f "$jar_file" ]]; then
+      errorln "The file '$jar_file' does not exist. Exiting"
+      exit 1
+    fi
+
+    # Start docker services
+    println "Docker-compose used: '$CLIENT_APP_COMPOSE_FILE_PATH'"
+    docker-compose -f $CLIENT_APP_COMPOSE_FILE_PATH up --build -d
+    successln "Docker elements for Client App started successfully! Service in port $CLIENT_APP_PORT"
+
+  fi
+
+}
+
 deployChaincode
+startClientApp

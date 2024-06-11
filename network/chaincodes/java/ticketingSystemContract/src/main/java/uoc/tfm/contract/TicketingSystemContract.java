@@ -234,7 +234,7 @@ public final class TicketingSystemContract implements ContractInterface {
      * @return the updated ticket
      */
     @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public Ticket addCommentForTicketInProgress(
+    public Ticket AddCommentForTicketInProgress(
             final Context ctx,
             final String ticketId,
             final String comment) {

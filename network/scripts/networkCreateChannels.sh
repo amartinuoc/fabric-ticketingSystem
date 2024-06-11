@@ -321,7 +321,7 @@ function startExplorerTool() {
     # Start docker services
     println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH up -d
-    successln "Docker elements for Explorer tool started successfully!"
+    successln "Docker elements for Explorer tool started successfully! Service in port $EXPLORER_TOOL_PORT"
 
   fi
 

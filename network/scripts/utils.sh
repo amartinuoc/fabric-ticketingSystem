@@ -102,6 +102,20 @@ function checkPrereqsJava11() {
   fi
 }
 
+function checkPrereqsJava17() {
+  local java_17_path=$(update-java-alternatives -l | awk '/java-1.17/ {print $3}')
+  if [ -n "$java_17_path" ]; then
+    export JAVA_HOME=$java_17_path
+    println "JAVA_HOME has been set to: "$JAVA_HOME""
+  else
+    errorln "OpenJDK 17 is not installed. Please install OpenJDK 17."
+    errorln
+    errorln "Run the following command to install OpenJDK 17:"
+    errorln "   sudo apt install openjdk-17-jdk"
+    exit 1
+  fi
+}
+
 function checkFabricBinaries() {
   local dir="../bin"
   if [[ ! -d "$dir" ]] || [[ ! "$(ls -A "$dir")" ]]; then
@@ -179,6 +193,46 @@ checkExplorerToolFiles() {
   if [[ ! -d "$connection_dir" ]]; then
     errorln "The directory '$connection_dir' does not exist."
     errorln "$info_error"
+    exit 1
+  fi
+
+}
+
+checkClientAppFiles() {
+  local clientApp_dir="apps/java/ticketingSystemClientApp"
+  local src_dir="$clientApp_dir/src"
+  local compose_file="$clientApp_dir/compose-app.yaml"
+  local docker_file="$clientApp_dir/dockerfile"
+  local pom_file="$clientApp_dir/pom.xml"
+  local mvnw_file="$clientApp_dir/mvnw"
+
+  if [[ ! -d "$clientApp_dir" ]]; then
+    errorln "The directory '$clientApp_dir' does not exist."
+    exit 1
+  fi
+
+  if [[ ! -d "$src_dir" ]]; then
+    errorln "The directory '$src_dir' does not exist."
+    exit 1
+  fi
+
+  if [[ ! -f "$compose_file" ]]; then
+    errorln "The file '$compose_file' does not exist."
+    exit 1
+  fi
+
+  if [[ ! -f "$docker_file" ]]; then
+    errorln "The file '$docker_file' does not exist."
+    exit 1
+  fi
+
+  if [[ ! -f "$pom_file" ]]; then
+    errorln "The file '$pom_file' does not exist."
+    exit 1
+  fi
+
+  if [[ ! -f "$mvnw_file" ]]; then
+    errorln "The file '$mvnw_file' does not exist."
     exit 1
   fi
 
@@ -382,11 +436,13 @@ export -f fatalln
 export -f setOrgIdentity
 export -f checkPrereqsDocker
 export -f checkPrereqsJava11
+export -f checkPrereqsJava17
 export -f checkFabricBinaries
 export -f checkFabricConf
 export -f checkFabricConfTx
 export -f checkOrgsAndOrdererArtifacts
 export -f checkExplorerToolFiles
+export -f checkClientAppFiles
 export -f checkChaincodeSource
 export -f checkChaincodeIsCompiled
 export -f checkTool

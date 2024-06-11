@@ -21,13 +21,18 @@ install_packets() {
     log "Installing some prerequisites..."
 
     # Install Git, cURL, Docker, Docker-compose, Go, Jq, and OpenJDK 11
-    sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk -y
+    sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk openjdk-17-jdk -y
 
-    # Install gcsfuse
-    export GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s)
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/gcsfuse.gpg
-    echo "deb [signed-by=/usr/share/keyrings/gcsfuse.gpg] https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
-    sudo apt update && sudo apt install gcsfuse -y
+    # Check if gcsfuse is installed
+    if ! command -v gcsfuse &>/dev/null; then
+        # Install gcsfuse
+        export GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s)
+        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/gcsfuse.gpg
+        echo "deb [signed-by=/usr/share/keyrings/gcsfuse.gpg] https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
+        sudo apt update && sudo apt install gcsfuse -y
+    else
+        log "gcsfuse is already installed"
+    fi
 }
 
 clone_repo() {

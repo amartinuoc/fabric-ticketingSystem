@@ -30,6 +30,10 @@ function networkStop() {
   fi
 
   # Stop docker services
+  if [ "$CLIENT_APP" = "true" ]; then
+    println "Docker-compose used: '$CLIENT_APP_COMPOSE_FILE_PATH'"
+    docker-compose -f $CLIENT_APP_COMPOSE_FILE_PATH stop
+  fi
   if [ "$EXPLORER_TOOL" = "true" ]; then
     println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH stop

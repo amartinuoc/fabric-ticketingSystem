@@ -22,9 +22,13 @@ function networkDelete() {
 
   rm -rf organizations/peerOrganizations
   rm -rf organizations/ordererOrganizations
+  rm -rf chaincodes/java/ticketingSystemContract/bin/
+  rm -rf chaincodes/java/ticketingSystemContract/build/
   rm -f chaincodes/*.tar.gz
   rm -rf channel-artifacts/*
   rm -f explorer/connection-profile/profile-uoctfm.json
+  rm -rf apps/java/ticketingSystemClientApp/target
+  rm -rf apps/java/ticketingSystemClientApp/src/main/resources/orgclient.uoctfm.com
   rm -rf logs
 
   # Check if WORK_ENVIRONMENT is 'cloud'
@@ -53,6 +57,10 @@ function networkDelete() {
   fi
 
   # First, stop (only) docker services
+  if [ "$CLIENT_APP" = "true" ]; then
+    println "Docker-compose used: '$CLIENT_APP_COMPOSE_FILE_PATH'"
+    docker-compose -f $CLIENT_APP_COMPOSE_FILE_PATH stop
+  fi
   if [ "$EXPLORER_TOOL" = "true" ]; then
     println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH stop
@@ -63,6 +71,9 @@ function networkDelete() {
   sleep 1
 
   # Then, down docker services and volumes
+  if [ "$CLIENT_APP" = "true" ]; then
+    docker-compose -f $CLIENT_APP_COMPOSE_FILE_PATH down
+  fi
   if [ "$EXPLORER_TOOL" = "true" ]; then
     docker-compose -f $EXPLORER_COMPOSE_FILE_PATH down --volumes
   fi
