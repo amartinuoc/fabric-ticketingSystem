@@ -5,8 +5,6 @@ script_name=$(basename "$0" | sed 's/\.[^.]*$//')
 REPO_URL="https://github.com/amartinuoc/fabric-ticketingSystem"
 TARGET_DIR="$HOME/fabric-ticketingSystem"
 NETWORK_HOME="$TARGET_DIR/network"
-MOUNT_POINT="$NETWORK_HOME/cloud_storage"
-BUCKET_NAME="bucket-tfm-test"
 
 # Log function
 log() {
@@ -20,7 +18,7 @@ install_packets() {
 
     log "Installing some prerequisites..."
 
-    # Install Git, cURL, Docker, Docker-compose, Go, Jq, and OpenJDK 11
+    # Install Git, cURL, Docker, Docker-compose, Go, Jq, and OpenJDK 11-17
     sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk openjdk-17-jdk -y
 
     # Check if gcsfuse is installed
@@ -61,7 +59,7 @@ create_systemd_service_gcp_init() {
     local pathOrigScript="scripts/gcp_init.sh"
     local pathFinScript="/usr/local/bin/gcp_init.sh"
 
-    log "Creating Systemd service to init gcp on system boot..."
+    log "Creating Systemd service to conf gcp on system boot..."
 
     if [ ! -d "$NETWORK_HOME" ]; then
         log "'$NETWORK_HOME' does not exist. Exiting."

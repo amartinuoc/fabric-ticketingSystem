@@ -6,6 +6,8 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 export NETWORK_HOME=$(dirname "$SCRIPT_DIR")
 cd $NETWORK_HOME
 
+export CALLER_ENV_VAR="networkDeployCC"
+
 # Import utils
 source scripts/utils.sh
 source scripts/envVar.sh
