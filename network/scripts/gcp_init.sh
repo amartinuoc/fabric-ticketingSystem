@@ -2,14 +2,6 @@
 
 # Extract script name
 script_name=$(basename "$0" | sed 's/\.[^.]*$//')
-
-# Set parameters
-BUCKET_NAME="bucket-tfm-test"
-MOUNT_POINT="$HOME/fabric-ticketingSystem/network/cloud_storage"
-HOSTS_FILE="/etc/hosts"
-GCS_HOSTS_FILE="$MOUNT_POINT/hosts.txt"
-HOSTNAME=$(hostname)
-LOCAL_IP=$(hostname -I | awk '{print $1}')
 LOG_FILE="/tmp/gcp_init.txt"
 LOCK_FILE="/tmp/gcp_init.lock"
 
@@ -27,6 +19,16 @@ log "SCRIPT STARTED" | tee -a "$LOG_FILE"
 
 # Create a lock file to prevent multiple executions
 touch "$LOCK_FILE"
+
+# Set parameters
+NETWORK_HOME="$HOME/fabric-ticketingSystem/network"
+CONFIG_FILE="$NETWORK_HOME/config.properties"
+BUCKET_NAME=$(grep "^GCP_BUCKET_NAME=" "$CONFIG_FILE" | cut -d'=' -f2)
+MOUNT_POINT="$NETWORK_HOME/cloud_storage"
+HOSTS_FILE="/etc/hosts"
+GCS_HOSTS_FILE="$MOUNT_POINT/hosts.txt"
+HOSTNAME=$(hostname)
+LOCAL_IP=$(hostname -I | awk '{print $1}')
 
 # Create HOSTNAME_COMPLETE
 case "$HOSTNAME" in

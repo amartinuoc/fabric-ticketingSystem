@@ -147,8 +147,11 @@ check_client_app_params() {
   esac
 
   if [ "$CLIENT_APP" = "true" ] && [ "$ID_CC_END_POLICY" = 2 ]; then
-    warnln "Properties file - Current value for CLIENT_APP: $CLIENT_APP"
-    warnln "Client App needs ID_CC_END_POLICY=1 for network to work. ID_CC_END_POLICY=1 now!"
+    if [ "$CALLER_ENV_VAR" == "networkDeployCC" ]; then
+      warnln "Properties file - Current value for CLIENT_APP: $CLIENT_APP"
+      warnln "Client App needs ID_CC_END_POLICY=1 for network to work. ID_CC_END_POLICY=1 now!"
+    fi
+    export ID_CC_END_POLICY=1
     export CC_END_POLICY="OR('Org1.member','Org2.member')"
   fi
 }
