@@ -211,9 +211,20 @@ function createAndStartDockerElements() {
   # Check for docker prerequisites
   checkPrereqsDocker
 
+  CONTAINER_CLIENT_APP=client.app.uoctfm.com
+  CONTAINER_EXPLORER=explorer.uoctfm.com
+
   infoln "\nStarting docker elements: containers, volumes, and networks"
 
   # Start docker services
+  if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_CLIENT_APP}$" && [ "$CLIENT_APP" = "true" ]; then
+    println "Docker-compose used: '$CLIENT_APP_COMPOSE_FILE_PATH'"
+    docker-compose -f $CLIENT_APP_COMPOSE_FILE_PATH up -d
+  fi
+  if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_EXPLORER}$" && [ "$EXPLORER_TOOL" = "true" ]; then
+    println "Docker-compose used: '$EXPLORER_COMPOSE_FILE_PATH'"
+    docker-compose -f $EXPLORER_COMPOSE_FILE_PATH up -d
+  fi
   println "Docker-compose used: '$COMPOSE_FILE_PATH'"
   docker-compose -f $COMPOSE_FILE_PATH up -d
 
@@ -236,7 +247,7 @@ function networkUp() {
       # Check if cloud storage contains required content and artifacts don't exist locally
       if checkCloudStorageHasContent && ! existOrgsAndOrdererArtifacts; then
         # copy Organizations artifacts from cloud to local
-        println "Organizations artifacts: cloudStorageal ==> local. Starting copy ..."
+        println "Organizations artifacts: cloudStorage ==> local. Starting copy ..."
         cp -r "$DIR_CLOUD_STORAGE/ordererOrganizations" "organizations/"
         cp -r "$DIR_CLOUD_STORAGE/peerOrganizations" "organizations/"
         successln "Organizations artifacts copied to local successfully!"
