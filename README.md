@@ -39,10 +39,10 @@ Una vez levantada la red y con el Chaincode instalado y desplegado en los canale
 
 Existen una serie de scripts en bash disponibles en la ruta 'network/scripts/'
 
-Se puede ejecutar el script 'installPrerequisites.sh' para instalar los paquetes necesarios:
+Se puede ejecutar el script 'initialConfigs.sh' para instalar los paquetes necesarios:
 
 ```bash
-./installPrerequisites.sh
+./initialConfigs.sh
 ```
 La lista de paquetes que se instala es la siguiente:
 
@@ -52,18 +52,19 @@ La lista de paquetes que se instala es la siguiente:
 * golang
 * jq
 * openjdk-11-jdk
+* openjdk-17-jdk
 
 ```bash
-sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk -y
+sudo apt install git curl docker.io docker-compose golang jq openjdk-11-jdk openjdk-17-jdk -y
 ```
 
-El script también realiza configuraciones adicionales relacionadas con el servicio Docker.
+El script también realiza configuraciones adicionales relacionadas con el servicio Docker, instala la utilidad 'gcsfuse' para montar buckets de GCP y crea/instala por último un servicio de sistema para realizar unas configuraciones en el arranque de la máquina relacionadas con GCP.
 
 ## Scripts
 
 ### Crear y Desplegar la Red HLF
 
-Usar el script 'networkAll.sh' para crear y desplegar la red HLF. Este script realiza los siguientes pasos:
+Para crear y desplegar la red HLF hay que seguir los siguientes pasos:
 
 * Borrar instancias anteriores de la red: 'networkDelete.sh'
 * Crear la red, generar los artefactos necesarios y arrancar todos los servicios o contenedores, incluyendo los nodos Orderer y peers: 'networkUp.sh'
